@@ -1,6 +1,6 @@
 import { BUILDINGS, CASTLE_LEVELS, HOME_ZONES, INDUSTRY_ZONES } from '../catalog.js';
 import { clamp } from '../rng.js';
-import { qualityAt } from './blocks.js';
+import { blockAt, computeBlocks, qualityAt } from './blocks.js';
 import { covered } from './coverage.js';
 import { needsRoad } from '../world/buildings.js';
 import { accessOf, network, rootTiles, walkRoads } from '../world/roads.js';
@@ -38,11 +38,13 @@ export function refresh(game, force = false) {
     if (a) sources.push([a.x, a.y]);
   }
   game.store = walkRoads(world, sources);
+  computeBlocks(game);
   for (const b of world.buildings.values()) {
     if (b.type === 'castle') { b.connected = true; b.haul = 0; continue; }
     const a = accessOf(world, b.x, b.y, b.w, b.d);
     b.access = a;
-    b.connected = Boolean(a) || !needsRoad(b);
+    // The heart of a block touches no street of its own: the block's streets reach it, if they join the city's.
+    b.connected = Boolean(a) || !needsRoad(b) || Boolean(blockAt(game, b.x + b.w / 2, b.y + b.d / 2)?.connected);
     b.haul = a ? Math.max(0, game.store[idx(a.x, a.y)] >= 0 ? game.store[idx(a.x, a.y)] : a.d) : 99;
   }
   // Housing that people can live in: ready, and a road reaches it.
