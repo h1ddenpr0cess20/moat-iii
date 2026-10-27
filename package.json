@@ -1,0 +1,26 @@
+{
+  "name": "moat-iii",
+  "version": "0.1.0",
+  "description": "A tech billionaire’s island city builder off the California coast: zone homes, shops and industry, run the services, and dig the canals wider. Built on the Madness Engine.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test \"test/**/*.test.js\"",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "madness-engine": "github:h1ddenpr0cess20/madness-engine"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "globals": "^17.13.0",
+    "vite": "^7.1.0"
+  }
+}

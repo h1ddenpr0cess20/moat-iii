@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Moat III: The Island</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #0a1424; overflow: hidden; }
+      #game { position: fixed; inset: 0; touch-action: none; }
+      .loading { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; background: linear-gradient(180deg, #ff9a62 0%, #f0607a 38%, #3a2a6a 70%, #0a1424 100%); font-family: 'Avenir Next', Avenir, Futura, 'Trebuchet MS', system-ui, sans-serif; color: #fff; }
+      .loading .box { width: min(420px, 80vw); text-align: center; }
+      .loading h1 { letter-spacing: 0.22em; font-size: 46px; margin: 0 0 4px; color: #fff; text-shadow: 0 3px 12px rgba(60, 10, 40, 0.5); }
+      .loading .bar { height: 10px; background: rgba(0,0,0,.3); border: 0; border-radius: 5px; overflow: hidden; }
+      .loading .bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd27a, #ff6f61); transition: width .25s; }
+      .loading p { color: #ffe8d8; font-size: 14px; letter-spacing: 0.3em; }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <div id="ui"></div>
+    <div class="loading" id="loading"><div class="box"><h1>MOAT III</h1><p>THE ISLAND</p><div class="bar"><i id="loading-bar" style="width:3%"></i></div><p id="loading-text">Surveying the coast…</p></div></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
