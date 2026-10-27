@@ -22,7 +22,7 @@ export const TOOLS = [
   { id: 'zone', icon: 'zone', name: 'Zones', key: '3', tip: 'Drag to zone land for homes, shops and industry.' },
   { id: 'block', icon: 'block', name: 'Blocks', key: '4', tip: 'Stamp a donut block: a street loop, a ring of homes and a heart.' },
   { id: 'build', icon: 'build', name: 'Build', key: '5', tip: 'Set down a building.' },
-  { id: 'demolish', icon: 'demolish', name: 'Bulldoze', key: '6', tip: 'Bulldoze buildings, roads and zones, and clear trees and rock.' },
+  { id: 'demolish', icon: 'demolish', name: 'Bulldoze', key: '6', tip: 'Bulldoze buildings, roads and zones, and clear trees.' },
 ];
 
 export const BLOCK_SIZES = { small: 10, medium: 14, large: 18 };

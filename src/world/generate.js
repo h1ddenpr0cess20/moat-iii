@@ -83,13 +83,12 @@ export function generate(world) {
   world.river = river;
   world.lakes = lakes;
 
-  // Rock and ore: where the guaranteed ones go. The home ward gets an outcrop in one corner, a copse in two others.
+  // Hills: where the crags go. The home ward gets a copse in two of its corners.
   const corner = Math.floor(rnd() * 4);
   const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
-  const outcrop = corners[corner];
   const copses = [corners[(corner + 1) % 4], corners[(corner + 2) % 4]];
   const crags = [];
-  // An ore crag in a ring-one ward (not the river's side), another further out.
+  // A hill in a ring-one ward (not the river's side), another further out.
   const spots = [[-1, 0], [1, 0], [0, -1], [0, 1]].filter(([a, b]) => !(river.vertical ? a === river.side && b === 0 : b === river.side && a === 0));
   const one = spots[Math.floor(rnd() * spots.length)];
   crags.push({ x: CENTER + one[0] * WARD + range(rnd, -4, 4), z: CENTER + one[1] * WARD + range(rnd, -4, 4), r: 3.4 });
@@ -138,28 +137,12 @@ export function generate(world) {
       const mean = (lo + hi) / 2;
       const slope = hi - lo;
       const cheb = Math.max(Math.abs(x + 0.5 - CENTER), Math.abs(y + 0.5 - CENTER));
-      const rock = fbm(x / 7 + 130, y / 7 + 60, seed + 31, 3);
-      const oreN = fbm(x / 6 - 90, y / 6 + 20, seed + 37, 2);
+      // No bare rock on this island: what is not water or cliff is grass.
       let g = GROUND.GRASS;
       if (under >= 5) g = GROUND.WATER;
       else if (slope > 1.15 || mean > 8.5) g = GROUND.CLIFF;
-      else if (cheb > HALF * 0.69 && rock > 0.52 && slope > 0.4 && mean < 8.5) g = GROUND.ROCK;
-      else if (rock > 0.74 && slope > 0.12 && cheb > 14 && mean > 1.4) g = GROUND.ROCK;
       ground[i] = g;
-      if (g === GROUND.ROCK) amount[i] = 120 + Math.floor(rock * 80);
-      // Crags have iron in them.
-      for (const c of crags) {
-        if (g === GROUND.WATER) break;
-        const d = Math.hypot(x + 0.5 - c.x, y + 0.5 - c.z);
-        if (d < c.r * 0.55 && oreN > 0.3) { ground[i] = GROUND.ORE; amount[i] = 90; }
-        else if (d < c.r && ground[i] !== GROUND.CLIFF && noise2(x * 1.7, y * 1.7, seed + 41) > 0.35) { ground[i] = GROUND.ROCK; amount[i] = 110; }
-      }
-      if (cheb > HALF * 0.74 && oreN > 0.86 && ground[i] === GROUND.ROCK) { ground[i] = GROUND.ORE; amount[i] = 90; }
-      // The home ward's outcrop.
-      if (cheb < WARD * 0.44 && g !== GROUND.WATER) {
-        const d = Math.hypot(x + 0.5 - (CENTER + outcrop[0] * WARD * 0.275), y + 0.5 - (CENTER + outcrop[1] * WARD * 0.275));
-        if (d < 2.3 && noise2(x * 1.9, y * 1.9, seed + 43) > 0.3) { ground[i] = GROUND.ROCK; amount[i] = 150; }
-      }
+      amount[i] = 0;
       // Fertility: the river's flood plain is the best, mountains the worst.
       let f = 0.42 + (fbm(x / 14 - 20, y / 14 + 40, seed + 47, 3) - 0.5) * 0.9;
       const rd = distToPath(river.pts, x + 0.5, y + 0.5);
