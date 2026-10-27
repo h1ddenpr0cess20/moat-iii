@@ -1,6 +1,7 @@
 import { BUILDINGS, CASTLE_LEVELS, HOME_ZONES, INDUSTRY_ZONES } from '../catalog.js';
 import { clamp } from '../rng.js';
 import { blockAt, computeBlocks, qualityAt } from './blocks.js';
+import { bonusOf, computeBonus, tourism } from './bonus.js';
 import { covered } from './coverage.js';
 import { needsRoad } from '../world/buildings.js';
 import { accessOf, network, rootTiles, walkRoads } from '../world/roads.js';
@@ -118,12 +119,13 @@ export function demand(game) {
   const workforce = r.workforce ?? game.pop.adults * FIT;
   const taxK = (game.tax - 0.09) * 6;
   const mood = (game.happiness - 55) / 100;
+  const B = bonusOf(game).demand;
   // Homes are wanted when there are jobs going, and by people who would come anyway to a pleasant city.
-  const res = clamp(((r.jobs ?? 0) * 1.1 + 24 - workforce) / (workforce + 24) + mood - taxK, -1, 1);
+  const res = clamp(((r.jobs ?? 0) * 1.1 + 24 - workforce) / (workforce + 24) + mood - taxK + B.res, -1, 1);
   // Shops want customers; industry wants hands, and sells outside the city too.
   const wantCom = people * WANT.com + 4, wantInd = people * WANT.ind + 10;
-  const com = clamp((wantCom - comJobs) / wantCom + mood * 0.5 - taxK, -1, 1);
-  const ind = clamp((wantInd - indJobs) / wantInd - taxK * 0.8, -1, 1);
+  const com = clamp((wantCom - comJobs) / wantCom + mood * 0.5 - taxK + B.com, -1, 1);
+  const ind = clamp((wantInd - indJobs) / wantInd - taxK * 0.8 + B.ind, -1, 1);
   return { res, com, ind, cap };
 }
 
@@ -133,6 +135,7 @@ export function weekWork(game) {
   game.flows = { made: {}, used: {} };
   refresh(game);
   allocate(game);
+  const bonus = computeBonus(game);
   const r = game.report;
   const people = game.pop.children + game.pop.adults + game.pop.elders;
   const t = game.tax / 0.1;
@@ -153,13 +156,19 @@ export function weekWork(game) {
     const value = 1 + 0.18 * qualityAt(game, cx, cy) + 0.15 * covered(game, 'cheer', cx, cy) + 0.1 * covered(game, 'education', cx, cy);
     resTax += people * share * TAX.res * t * value;
   }
-  const taxes = resTax + comTax + indTax;
+  // The port, the airport and the university: shops and industry do better for them.
+  resTax *= 1 + bonus.tax.res;
+  comTax *= 1 + bonus.tax.com;
+  indTax *= 1 + bonus.tax.ind;
+  // And the visitors: hotel and sales taxes on what they spend.
+  const tourTax = tourism(game, r.care?.cheer ?? 0) * t;
+  const taxes = resTax + comTax + indTax + tourTax;
   game.stock.gold += taxes - upkeep;
   game.takings += taxes;
   game.flows.made.gold = taxes;
   game.flows.used.gold = upkeep;
   r.taxes = taxes;
-  r.taxSplit = { res: resTax, com: comTax, ind: indTax };
+  r.taxSplit = { res: resTax, com: comTax, ind: indTax, tour: tourTax };
   r.upkeep = upkeep;
   r.income = taxes;
   r.delta = taxes - upkeep;

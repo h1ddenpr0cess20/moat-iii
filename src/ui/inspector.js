@@ -6,7 +6,8 @@ import { HEARTS, blockAt, blockReport, qualityAt } from '../sim/blocks.js';
 import { covered } from '../sim/coverage.js';
 import { headcount, planCastle, startCastle, setPriority, demolish } from '../sim/game.js';
 import { priorityOf, jobsOf } from '../sim/economy.js';
-import { landValue } from '../sim/growth.js';
+import { landValue, upgradeNeed } from '../sim/growth.js';
+import { bonusLines, noiseAt } from '../sim/bonus.js';
 import { fill, h, num, round } from './dom.js';
 import { icon } from './icons.js';
 
@@ -85,7 +86,7 @@ export function createInspector(ctx) {
     const next = GROWN[zone]?.[b.level];
     if (!next) return out;
     const v = landValue(game, cx, cy), pop = headcount(game);
-    const needV = b.level === 1 ? 0.45 : 1.1, needPop = b.level === 1 ? (zone === 'com' ? 250 : 120) : (zone === 'com' ? 2500 : zone === 'dense' ? 1500 : 800);
+    const { v: needV, pop: needPop } = upgradeNeed(game, zone, b.level);
     const want = [[zone === 'ind' ? 'Demand for industry' : 'Good land: parks, police and schools near, no smog', zone === 'ind' || v >= needV], [`A city of ${needPop.toLocaleString('en-US')}+`, pop >= needPop]];
     if (zone === 'ind' && b.level === 2) want.push(['A school in reach', covered(game, 'education', cx, cy) >= 0.3]);
     void qualityAt;
@@ -124,8 +125,16 @@ export function createInspector(ctx) {
       if (def.upkeep) rows.push(['Budget', `${money(def.upkeep * (game.budget ?? 1))} a week`]);
       if (def.auto) rows.push(['Land value', pct(Math.max(0, Math.min(1, landValue(game, b.x + b.w / 2, b.y + b.d / 2) / 1.6)))]);
       if (def.serve) rows.push(['Looks after', `homes within ${def.serve.radius} tiles`]);
+      if (def.noisy) rows.push(['Noise', `<span class="warn">${def.noisy >= 1 ? 'very loud' : def.noisy >= 0.5 ? 'loud' : 'a hum'}: homes near it are worth less</span>`]);
     } else rows.push(['Crew', `${round((b.crewK ?? 0) * def.crew)} of ${def.crew} builders`]);
     parts.push(kv(rows));
+    const perks = bonusLines(def);
+    if (perks.length) {
+      const first = [...world.buildings.values()].find((o) => o.type === b.type && o.state === 'ready' && o.connected);
+      parts.push(h('h3', {}, 'For the whole island'), ...perks.map((t) => h('div', { html: `✦ ${t}` })));
+      if (b.state === 'ready' && first && first !== b) parts.push(h('p.dim', {}, `A second ${def.name.toLowerCase()} adds half as much again.`));
+      if (b.state === 'ready' && !b.connected) parts.push(h('p.bad', {}, 'Not until a road joins it to the tower.'));
+    }
     const block = blockAt(game, b.x + 0.5, b.y + 0.5);
     if (block && (def.cap || def.auto)) parts.push(h('h3', {}, `In ${block.name}`), blockCard(block, true));
     if (def.auto && b.state === 'ready') parts.push(...houseNeeds(b));
@@ -188,6 +197,8 @@ export function createInspector(ctx) {
       const care = Object.keys(NAMES).map((k) => [k, covered(game, k, x, y)]).filter(([, v]) => v > 0.05);
       rows.push(['Services', care.length ? care.map(([k, v]) => `${NAMES[k]} ${pct(v)}`).join(', ') : 'none reach here']);
       rows.push(['Land value', pct(Math.max(0, Math.min(1, landValue(game, x + 0.5, y + 0.5) / 1.6)))]);
+      const loud = noiseAt(game, x + 0.5, y + 0.5);
+      if (loud > 0.05) rows.push(['Noise', pct(loud)]);
     }
     parts.push(kv(rows));
     if (!w.owned) parts.push(h('div.actions', {}, h('button.btn.gold', { onclick: () => ctx.dialogs.open('realm', { ward: w.id }) }, 'See on the district map')));

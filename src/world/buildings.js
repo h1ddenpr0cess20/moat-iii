@@ -44,6 +44,8 @@ export function countNear(world, cx, cy, radius, test) {
 }
 
 const isWater = (world) => (i) => world.ground[i] === GROUND.WATER;
+/** Open water: the sea or a lagoon, not a canal. */
+const isSea = (world) => (i) => world.ground[i] === GROUND.WATER && !world.moat[i];
 const isTrees = (world) => (i) => world.tree[i] > 0 && world.realm[i] === 1;
 const isRock = (world) => (i) => world.ground[i] === GROUND.ROCK && world.amount[i] > 0 && world.realm[i] === 1;
 const isOre = (world) => (i) => world.ground[i] === GROUND.ORE && world.amount[i] > 0 && world.realm[i] === 1;
@@ -75,6 +77,7 @@ export function check(world, type, x, y, front) {
   const need = def.where;
   if (need?.water && countNear(world, cx, cy, need.water.radius, isWater(world)) < need.water.count) return { ok: false, reason: 'Needs open water close by', rect };
   if (need?.water && countNear(world, cx, cy, 2.6, isWater(world)) < 1) return { ok: false, reason: 'Must stand at the water’s edge', rect };
+  if (need?.sea && countNear(world, cx, cy, need.sea.radius, isSea(world)) < need.sea.count) return { ok: false, reason: 'Must stand on the shore of the open sea', rect };
   if (need?.rock && countNear(world, cx, cy, need.rock.radius, isRock(world)) < need.rock.count) return { ok: false, reason: 'Needs bare rock close by', rect };
   if (need?.ore && countNear(world, cx, cy, need.ore.radius, isOre(world)) < need.ore.count) return { ok: false, reason: 'Needs iron ore close by', rect };
   if (need?.trees && countNear(world, cx, cy, need.trees.radius, isTrees(world)) < need.trees.count) warn.push('Few trees within reach');

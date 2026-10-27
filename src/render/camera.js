@@ -38,7 +38,7 @@ export function createCamera({ GFX, stage, world, viewDef, dom }) {
     if (d.y > -0.01) return null;
     const f = (t) => o.y + d.y * t - surface(o.x + d.x * t, o.z + d.z * t);
     let t0 = 0, t1 = 0, hit = false;
-    for (let t = 0.2; t < 900; t += Math.max(0.3, t * 0.012)) {
+    for (let t = 0.2; t < camera.far; t += Math.max(0.3, t * 0.012)) {
       t1 = t;
       if (f(t) < 0) { hit = true; break; }
       t0 = t;
@@ -235,9 +235,9 @@ export function createCamera({ GFX, stage, world, viewDef, dom }) {
       target.x += (goal.x - target.x) * k;
       target.z += (goal.z - target.z) * k;
       target.y += (surface(target.x, target.z) - target.y) * (1 - Math.exp(-6 * dt));
-      // Close in, the near plane comes in too; far out, it keeps the depth buffer honest.
-      camera.near = clamp(0.012 * api.distance, 0.12, 1.6);
-      camera.far = 900;
+      // Close in, the near plane comes in too; far out, it keeps the depth buffer honest, and the far plane goes back far enough to hold the whole map.
+      camera.near = clamp(0.012 * api.distance, 0.12, 3);
+      camera.far = Math.max(900, api.distance * 1.3 + SIZE * 1.6);
     },
     dispose() {
       dom.removeEventListener('pointerdown', onDown);
