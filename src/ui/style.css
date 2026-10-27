@@ -191,7 +191,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .toast.good { border-left-color: var(--good); }
 .toast.bad { border-left-color: var(--bad); }
 .toast.warn { border-left-color: var(--warn); }
-.toast.out { opacity: 0; transform: translateX(-20px); transition: 0.5s; }
+.toast.out { opacity: 0; transform: translateX(-20px); transition: 0.5s; pointer-events: none; }
+.toast .count { opacity: 0.7; font-weight: 600; }
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
 
 /* ---------- tip ---------- */
