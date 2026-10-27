@@ -1,5 +1,6 @@
 import { NOTE, createAudio } from 'madness-engine/audio';
 import { pickSettings, saveSlot } from 'madness-engine/storage';
+import { BUILDINGS } from '../catalog.js';
 import { hash2 } from '../rng.js';
 import { calendar } from '../sim/calendar.js';
 import { GROUND } from '../config.js';
@@ -82,14 +83,16 @@ export function createSound({ game, scene }) {
   document.addEventListener('visibilitychange', () => { if (!document.hidden && audio.ctx) wakeUp(); });
 
   // What the game tells the sound.
-  game.on('built', () => { if (ok('built', 0.4)) SFX.built(); });
+  // The bell is for what the founder ordered: the homes, shops and works that grow on the zones would ring it all day.
+  game.on('built', ({ building: b }) => { if (!BUILDINGS[b.type]?.auto && ok('built', 0.4)) SFX.built(); });
   game.on('annexed', () => SFX.toll());
   game.on('annexStart', () => SFX.place());
   game.on('fire', () => { if (ok('fire', 1)) SFX.alarm(); });
   game.on('hurricane', ({ phase }) => { threat = phase === 'over' ? 0 : 1; if (phase !== 'over') SFX.horn(); });
   game.on('castle', () => SFX.fanfare());
   game.on('rank', () => SFX.fanfare());
-  game.on('arrival', () => { if (ok('arrive', 1.5)) SFX.arrive(); });
+  // People come most weeks: the chime now and then says so, not every time.
+  game.on('arrival', () => { if (ok('arrive', 20)) SFX.arrive(); });
   game.on('gate', () => SFX.gate());
   game.on('gameover', () => SFX.dirge());
 
