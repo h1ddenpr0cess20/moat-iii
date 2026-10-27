@@ -160,9 +160,9 @@ export function plain(world, x, y) {
 export function describeTile(world, x, y) {
   const i = idx(x, y);
   const g = world.ground[i];
-  const names = ['Meadow', 'Rock outcrop', 'Iron ore', 'Water', 'Cliff', 'Shore'];
+  const names = ['Open land', 'Rocky bluff', 'Rocky bluff', 'Water', 'Cliff', 'Beach'];
   let text = names[g];
-  if (world.tree[i]) text = world.tree[i] > 1 ? 'Forest' : 'Woodland';
+  if (world.tree[i]) text = world.tree[i] > 1 ? 'Grove' : 'Trees';
   return text;
 }
 

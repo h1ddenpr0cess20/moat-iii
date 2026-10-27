@@ -1,16 +1,18 @@
 import { BUILDINGS } from '../catalog.js';
-import { CENTER, DIRS } from '../config.js';
+import { CENTER, DIRS, HOME_WARD } from '../config.js';
+import { wardId } from '../world/wards.js';
 import { check, addBuilding, frontFor } from '../world/buildings.js';
 import { network, roadBlocked } from '../world/roads.js';
 import { findLot } from '../world/zoning.js';
 import { idx, inb } from '../world/world.js';
-import { buildRoad, buildZone, placeBuilding, rectTiles } from './actions.js';
+import { buildRoad, buildZone, completeAnnex, placeBuilding, rectTiles } from './actions.js';
 
 /**
  * The founder does not start with nothing: an avenue from the tower's bridge to
  * the south, a cross street, homes zoned on one side and shops and industry on
  * the other, a few bungalows, a strip mall, a police and a fire station. A
- * neighborhood to grow from.
+ * neighborhood to grow from, and the district south of it, already the
+ * founder's, with room for whole donut blocks.
  */
 
 /** Looks outward from a spot for somewhere a building can stand (nearest first), with a road beside it if one can be had. */
@@ -80,8 +82,14 @@ export function seedHamlet(game) {
   const C = CENTER;
   const free = { free: true };
   const { world } = game;
+  // The founder bought the district south of the tower with the island: its canals are dug, and the avenue runs on into it.
+  completeAnnex(game, world.wards[wardId(HOME_WARD, HOME_WARD + 1)]);
+  game.log.length = 0;
   buildRoad(game, rectTiles(C - 1, C + 6, C, C + 11), 'dirt', free);
   buildRoad(game, rectTiles(C - 11, C + 8, C + 10, C + 8), 'dirt', free);
+  // On south into the new district, as a boulevard, with a cross street halfway down it.
+  buildRoad(game, rectTiles(C - 1, C + 12, C, C + 43), 'cobble', free);
+  buildRoad(game, rectTiles(C - 11, C + 28, C + 10, C + 28), 'dirt', free);
   // Homes on one side of the boulevard, shops and a little industry on the other, clearing the trees where it must.
   const zones = [[C - 11, C + 9, C - 2, C + 11, 'res'], [C - 11, C + 6, C - 2, C + 7, 'res'], [C + 1, C + 6, C + 10, C + 7, 'com'], [C + 1, C + 9, C + 10, C + 11, 'ind']];
   for (const [x0, y0, x1, y1, zone] of zones) buildZone(game, rectTiles(x0, y0, x1, y1), zone, free);

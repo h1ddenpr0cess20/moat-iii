@@ -77,7 +77,7 @@ export function createUI({ game, scene, root, clock, sfx = () => {}, extra = {} 
     else if (e.code === 'KeyM') ctx.dialogs.toggle('realm');
     else if (e.code === 'KeyL') ctx.dialogs.toggle('ledger');
     else if (e.code === 'KeyH') ctx.dialogs.toggle('chronicle');
-    else if (e.code === 'KeyC') document.querySelector('.tool[aria-label="Castle"]')?.click();
+    else if (e.code === 'KeyC') document.querySelector('.tool[aria-label="Tower"]')?.click();
     else if (e.code === 'F10') ctx.dialogs.toggle('menu');
   });
 

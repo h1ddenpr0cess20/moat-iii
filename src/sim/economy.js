@@ -55,7 +55,7 @@ export const haulK = () => 1;
 /** There are no fields to share out. */
 export function assignFields() {}
 
-export const jobsOf = (b) => (b.type === 'castle' ? CASTLE_LEVELS[b.level - 1]?.jobs ?? 0 : BUILDINGS[b.type]?.jobs ?? 0);
+export const jobsOf = (b) => (b.type === 'castle' ? CASTLE_LEVELS[b.level]?.jobs ?? 0 : BUILDINGS[b.type]?.jobs ?? 0);
 
 /** Who fills a job first: the city's own services, then shops and industry. The ledger may raise or lower a type. */
 export const priorityOf = (game, type) => game.prio[type] ?? (BUILDINGS[type]?.serve ? 3 : 2);

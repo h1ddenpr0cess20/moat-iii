@@ -52,7 +52,7 @@ export function realmDialog(ctx, { ward: initial = null } = {}) {
   let selected = initial ?? world.wards.find((w) => !w.owned && bordersRealm(world, w.id))?.id ?? world.wards.find((w) => w.owned).id;
   if (!cached || cached.seed !== world.seedText) cached = { seed: world.seedText, img: terrainImage(world) };
 
-  const canvas = h('canvas', { width: SIZE * PX, height: SIZE * PX, 'aria-label': 'Map of the realm' });
+  const canvas = h('canvas', { width: SIZE * PX, height: SIZE * PX, 'aria-label': 'Map of the island' });
   const info = h('div.ward-info');
   let timer = 0;
 
@@ -76,7 +76,7 @@ export function realmDialog(ctx, { ward: initial = null } = {}) {
       c.setLineDash(w.owned || w.id === selected ? [] : reach ? [8, 5] : [3, 5]);
       c.strokeRect(x + 1.5, y + 1.5, S - 3, S - 3);
       c.setLineDash([]);
-      c.font = `italic ${w.owned ? 700 : 400} ${Math.max(10, Math.round(13 * 7 / WARDS + 3))}px Palatino, Georgia, serif`;
+      c.font = `italic ${w.owned ? 700 : 400} ${Math.max(10, Math.round(13 * 7 / WARDS + 3))}px 'Avenir Next', Avenir, Futura, 'Trebuchet MS', sans-serif`;
       c.textAlign = 'center';
       c.fillStyle = w.owned ? '#2b1d08' : 'rgba(43,29,18,0.82)';
       c.strokeStyle = 'rgba(240,228,190,0.8)'; c.lineWidth = 3;
@@ -138,7 +138,7 @@ export function realmDialog(ctx, { ward: initial = null } = {}) {
     refresh: true,
     width: 940,
     draw(body) {
-      if (!body.contains(canvas)) fill(body, h('div.realm-map', {}, h('div', {}, canvas, h('p.dim', { style: { marginTop: '6px' } }, 'Click a ward. Double-click to fly there.')), info));
+      if (!body.contains(canvas)) fill(body, h('div.realm-map', {}, h('div', {}, canvas, h('p.dim', { style: { marginTop: '6px' } }, 'Click a district. Double-click to fly there.')), info));
       draw(); showInfo();
       clearInterval(timer);
       timer = setInterval(draw, 120);

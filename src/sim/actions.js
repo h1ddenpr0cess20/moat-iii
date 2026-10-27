@@ -280,11 +280,11 @@ export function planAnnex(game, wardId) {
   const out = { ward, cost, work, ok: false, reason: null };
   if (ward.owned) return { ...out, reason: 'Already yours' };
   if (ward.dig) return { ...out, reason: 'The diggers are at work here' };
-  if (!bordersRealm(world, wardId)) return { ...out, reason: 'It must touch your realm' };
+  if (!bordersRealm(world, wardId)) return { ...out, reason: 'It must border your island' };
   const digging = world.wards.find((w) => w.dig);
   if (digging) return { ...out, reason: `The diggers are busy at ${digging.name}` };
   const cap = CASTLE_LEVELS[game.castleLevel].wards;
-  if (owned >= cap) return { ...out, reason: `A ${CASTLE_LEVELS[game.castleLevel].name} can hold only ${cap} ${cap === 1 ? 'district' : 'districts'}`, capped: true };
+  if (owned >= cap) return { ...out, reason: `A ${CASTLE_LEVELS[game.castleLevel].name} can run only ${cap} ${cap === 1 ? 'district' : 'districts'}`, capped: true };
   if (!canPay(game.stock, cost)) return { ...out, reason: `Needs ${costText(cost)}`, short: true };
   return { ...out, ok: true };
 }
@@ -295,7 +295,7 @@ export function startAnnex(game, wardId) {
   payAll(game, plan.cost);
   plan.ward.dig = { progress: 0, weeks: plan.work.weeks, crew: plan.work.crew };
   game.emit('annexStart', { ward: plan.ward });
-  game.note(`The diggers have begun the moat around ${plan.ward.name}.`, 'info', [plan.ward.gx * WARD + WARD / 2, plan.ward.gy * WARD + WARD / 2]);
+  game.note(`The dredgers have begun the canals around ${plan.ward.name}.`, 'info', [plan.ward.gx * WARD + WARD / 2, plan.ward.gy * WARD + WARD / 2]);
   return plan;
 }
 

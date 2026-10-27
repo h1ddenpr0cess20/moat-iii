@@ -10,7 +10,7 @@ export function createTitle({ seed, difficulty, disasters, size, sizes, canConti
   // A peaceful city: no raiders, no defenses. Fires and the odd earthquake can be turned off.
   const level = difficulty;
   let chosen = size;
-  const sizeSeg = h('span.seg', {}, ...Object.entries(sizes).map(([id, wards]) => h('button', { class: id === chosen ? 'on' : '', title: `${wards} × ${wards} wards, ${wards * 30} × ${wards * 30} tiles`, onclick: (e) => { chosen = id; e.target.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.target)); note.textContent = sizeNote(id); } }, `${id[0].toUpperCase() + id.slice(1)} ${wards * 30}`)));
+  const sizeSeg = h('span.seg', {}, ...Object.entries(sizes).map(([id, wards]) => h('button', { class: id === chosen ? 'on' : '', title: `${wards} × ${wards} districts, ${wards * 30} × ${wards * 30} tiles`, onclick: (e) => { chosen = id; e.target.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.target)); note.textContent = sizeNote(id); } }, `${id[0].toUpperCase() + id.slice(1)} ${wards * 30}`)));
   const sizeNote = (id) => `${sizes[id]} × ${sizes[id]} districts. ${id === 'large' ? 'A great coast: slower to make, and it wants a good machine.' : id === 'medium' ? 'Room to grow, and a fair load.' : 'A compact coast, quick to make.'}`;
   const note = h('div.dim', { style: { fontSize: '12.5px', textAlign: 'left' } }, sizeNote(chosen));
   const dice = () => { seedInput.value = Math.random().toString(36).slice(2, 8); };

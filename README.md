@@ -2,7 +2,7 @@
 
 A California city builder on an island in the Pacific, built on the [Madness Engine](https://github.com/h1ddenpr0cess20/madness-engine).
 
-You're a tech billionaire. You bought an island off the coast, put your tower in the middle with a canal around it, Venice Beach style, and now you're building the company town around it. Zone homes, shops and industry, SimCity-style. Run the police, fire stations, schools, parks and hospitals. Dig the canals wider to take in the next district. The best way to lay out a neighborhood is still the **donut block**.
+You're a tech billionaire. You bought an island off the coast, put your tower in the middle with a canal around it, Venice Beach style, and now you're building the company town around it. Zone homes, shops and industry, SimCity-style. Run the police, fire stations, schools, parks and hospitals. You start with two districts, the tower's and the open one south of it. Dig the canals wider to take in more. The best way to lay out a neighborhood is still the **donut block**.
 
 It's a peaceful game: no raiders and no defenses. The only trouble is the odd fire, earthquake or hurricane, and you can turn all three off.
 
@@ -46,4 +46,4 @@ Node 22.12 or later. The game needs a browser with WebGPU or WebGL 2.
 * `src/world/`: the island from a seed (heightfield falling to the sea, the canal's distance field, districts, bridges, streets, zones, lots). Pure JS, no drawing.
 * `src/sim/`: the weekly simulation (taxes and budgets, R C I demand, jobs, mood and crime, growth, fires, earthquakes, hurricanes, blocks, actions). Pure JS. `src/save.js` stores only what changed from the seeded land.
 * `src/render/`: the picture, drawn with the engine's `gfx`, `stage` and `view`. The sea and the canals are the engine's `ocean`, calmed to its `river` canal water up close and stirred into its storm sea by a hurricane. The trees are the engine's `flora` (date palms, fan palms, redwoods, cypresses). The buildings are the engine's `buildings/california` models. The traffic is the engine's cars, driving the streets.
-* `src/audio/`: sound and a generative score, all Web Audio, no samples.
+* `src/audio/`: sound effects and a generative California lo-fi score (electric piano, bass, a soft synth lead and a swung beat, in bright modes that change with the year), all Web Audio, no samples.

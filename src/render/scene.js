@@ -35,7 +35,7 @@ export async function createScene({ host, game, progress = () => {} }) {
     lights: { key: { from: sunDir }, fill: null }, shadowSize: 2048, backdrop: '#9fb8c8', label: 'moat',
   });
   useRenderer(stage.renderer);
-  progress(0.04, 'Raising the land');
+  progress(0.04, 'Raising the island');
   const materials = createMaterials(GFX);
   const terrain = createTerrain(GFX, world, materials, stage.scene);
   const water = createWater(GFX, world, materials, stage.scene);
@@ -52,11 +52,11 @@ export async function createScene({ host, game, progress = () => {} }) {
 
   const cal0 = calendar(game.week);
   water.build();
-  progress(0.08, 'Painting the fields and the forest floor');
-  await terrain.paintAll([CENTER, CENTER], (f) => progress(0.08 + f * 0.55, 'Painting the fields and the forest floor'));
-  progress(0.64, 'Planting trees');
-  await trees.buildAll(cal0.season, [CENTER, CENTER], (f) => progress(0.64 + f * 0.2, 'Planting trees'));
-  progress(0.86, 'Laying the roads and raising the houses');
+  progress(0.08, 'Painting the beaches and the lawns');
+  await terrain.paintAll([CENTER, CENTER], (f) => progress(0.08 + f * 0.55, 'Painting the beaches and the lawns'));
+  progress(0.64, 'Planting the palms');
+  await trees.buildAll(cal0.season, [CENTER, CENTER], (f) => progress(0.64 + f * 0.2, 'Planting the palms'));
+  progress(0.86, 'Paving the streets and raising the towers');
   trees.updateLod(stage.target.x, stage.target.z, 30);
   decals.refreshFields(cal0);
   decals.buildAll();

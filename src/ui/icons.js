@@ -3,7 +3,7 @@
  * palette, all drawn here so that the page needs no images.
  */
 
-const S = '#2a1c10';
+const S = '#14223a';
 const defs = {
   gold: `<circle cx="12" cy="12" r="9" fill="#f0c446" stroke="${S}" stroke-width="1.4"/><circle cx="12" cy="12" r="5.6" fill="none" stroke="#a87a14" stroke-width="1.4"/><path d="M12 8.2v7.6M9.4 10.4h5.2" stroke="#a87a14" stroke-width="1.4" stroke-linecap="round"/>`,
   wood: `<path d="M3 15.5 19 9" stroke="${S}" stroke-width="7" stroke-linecap="round"/><path d="M3 15.5 19 9" stroke="#b07a42" stroke-width="5" stroke-linecap="round"/><circle cx="19" cy="9" r="3.4" fill="#e2b87a" stroke="${S}" stroke-width="1.2"/><circle cx="19" cy="9" r="1.4" fill="none" stroke="#b07a42" stroke-width="1"/><path d="M5 20 20 15.5" stroke="${S}" stroke-width="6" stroke-linecap="round"/><path d="M5 20 20 15.5" stroke="#9a6736" stroke-width="4" stroke-linecap="round"/>`,
@@ -24,8 +24,10 @@ const defs = {
   content: `<circle cx="12" cy="12" r="9" fill="#e6c868" stroke="${S}" stroke-width="1.4"/><circle cx="8.6" cy="10" r="1.2" fill="${S}"/><circle cx="15.4" cy="10" r="1.2" fill="${S}"/><path d="M8 15.5h8" stroke="${S}" stroke-width="1.5" stroke-linecap="round"/>`,
   sad: `<circle cx="12" cy="12" r="9" fill="#d9a05a" stroke="${S}" stroke-width="1.4"/><circle cx="8.6" cy="10" r="1.2" fill="${S}"/><circle cx="15.4" cy="10" r="1.2" fill="${S}"/><path d="M7.8 17c1.4-2.8 7-2.8 8.4 0" stroke="${S}" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
   angry: `<circle cx="12" cy="12" r="9" fill="#c9694a" stroke="${S}" stroke-width="1.4"/><path d="M6.5 8.4l4 1.6M17.5 8.4l-4 1.6" stroke="${S}" stroke-width="1.5" stroke-linecap="round"/><circle cx="8.8" cy="11.4" r="1.1" fill="${S}"/><circle cx="15.2" cy="11.4" r="1.1" fill="${S}"/><path d="M8 17c1.4-2.6 6.6-2.6 8 0" stroke="${S}" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
-  castle: `<path d="M3 21V8h3v2h2V8h2v2h4V8h2v2h2V8h3v13z" fill="#a9a091" stroke="${S}" stroke-width="1.3" stroke-linejoin="round"/><path d="M9.5 21v-5a2.5 2.5 0 0 1 5 0v5z" fill="#4a3624" stroke="${S}" stroke-width="1.1"/><path d="M12 8V2.5l4 1.5-4 1.5" fill="#c0392b" stroke="${S}" stroke-width="1"/>`,
-  crown: `<path d="M3 18 2 7l5 4 5-7 5 7 5-4-1 11z" fill="#f0c446" stroke="${S}" stroke-width="1.4" stroke-linejoin="round"/><path d="M3 18h18v2.4H3z" fill="#d6a02a" stroke="${S}" stroke-width="1.2"/><circle cx="12" cy="13" r="1.4" fill="#c0392b"/>`,
+  // The founder's tower: glass in three setbacks and a spire.
+  castle: `<path d="M12 1.5v3" stroke="${S}" stroke-width="1.3" stroke-linecap="round"/><path d="M9.5 4.5h5v4h-5z" fill="#8fd0e8" stroke="${S}" stroke-width="1.2" stroke-linejoin="round"/><path d="M7.5 8.5h9v5h-9z" fill="#6ab8d8" stroke="${S}" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 13.5h14V22H5z" fill="#4a9ac4" stroke="${S}" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 16h2M11 16h2M14 16h2M8 19h2M14 19h2M10.5 6.5h3M9.5 11h5" stroke="#ffe2a8" stroke-width="1.2" stroke-linecap="round"/>`,
+  // The island: a sun going down over a palm and the sea.
+  crown: `<circle cx="12" cy="12" r="7" fill="#ffb35c" stroke="${S}" stroke-width="1.3"/><path d="M2 15.5c3-1.6 5 1.6 8 0s5 1.6 8 0 3 0 4 0V22H2z" fill="#2ec4c6" stroke="${S}" stroke-width="1.2" stroke-linejoin="round"/><path d="M15.5 15V7.5" stroke="#5a3e26" stroke-width="1.4" stroke-linecap="round"/><path d="M15.5 7.5c-2-1.6-4.5-1-5.5.5M15.5 7.5c2-1.6 4.5-1 5.5.5M15.5 7.5c-.5-2.2-2.4-3.3-4-3M15.5 7.5c.5-2.2 2.4-3.3 4-3" stroke="#3f8a3a" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
   shield: `<path d="M12 2.5 20 5v7c0 5-3.6 8-8 9.5C7.6 20 4 17 4 12V5z" fill="#c0463a" stroke="${S}" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 2.5V21.5C7.6 20 4 17 4 12V5z" fill="#e8e2d0" stroke="none" opacity=".92"/><path d="M12 2.5 20 5v7c0 5-3.6 8-8 9.5" fill="none" stroke="${S}" stroke-width="1.4"/>`,
   sun: `<circle cx="12" cy="12" r="4.6" fill="#f4c542" stroke="${S}" stroke-width="1.2"/><g stroke="#e0a82a" stroke-width="1.8" stroke-linecap="round"><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></g>`,
   leaf: `<path d="M4 20C4 9 10 4 20 4c0 10-6 16-14 16" fill="#6ea83e" stroke="${S}" stroke-width="1.3" stroke-linejoin="round"/><path d="M4 20 14 10" stroke="#2f5a1a" stroke-width="1.3" stroke-linecap="round"/>`,

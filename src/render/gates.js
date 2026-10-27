@@ -3,79 +3,65 @@ import { heightAt } from '../world/world.js';
 import { CENTER, ROAD } from '../config.js';
 import { Batch, Mesher } from 'madness-engine/mesher';
 import { castsShadow } from './materials.js';
-import { PALETTE } from 'madness-engine/buildings/common';
 import { freeTree } from './dispose.js';
 
 /**
- * The bridges over the moat: a plank deck with rails and trestles, stone
- * abutments at both banks, and (where a gatehouse has been built) a drawbridge
- * leaf hinged at the gate that swings up when the founder raises it. The castle has
- * a bridge of its own to its courtyard.
+ * The bridges over the canals: concrete, as in Venice Beach. An asphalt deck
+ * with a yellow line and a sidewalk each side, low parapet walls, round piers
+ * into the water, and a streetlight at each end. The tower has a bridge of
+ * its own to its plaza.
  */
 
-const STONE = ['#a8a090', '#9a9283', '#b4ac9a', '#8f887a'];
+const CONCRETE = '#c9c6be', CURB = '#dedbd2', ASPHALT = '#4a4b4f';
 
-/** A deck of planks `len` long, `width` wide, with a plank's lines drawn across it. Along local x from x0 to x1. */
-function deck(m, x0, x1, y, width, col = PALETTE.wood[0]) {
+/** A deck `width` wide along local x from x0 to x1: a concrete slab, asphalt down the middle, sidewalks either side. */
+function deck(m, x0, x1, y, width) {
   const w = width / 2;
-  m.box('wood', x0, y - 0.1, -w, x1, y, w, col, { skip: ['bottom'], uvScale: 1.4 });
-  const n = Math.max(2, Math.round((x1 - x0) / 0.22));
-  for (let i = 0; i <= n; i++) {
-    const x = x0 + ((x1 - x0) * i) / n;
-    m.box('plain', x - 0.006, y + 0.0, -w, x + 0.006, y + 0.006, w, '#2a1c10', { skip: ['bottom'] });
-  }
-  // Two stringers under it.
-  for (const z of [-w * 0.6, w * 0.6]) m.box('wood', x0, y - 0.22, z - 0.05, x1, y - 0.1, z + 0.05, PALETTE.wood[1], { skip: ['bottom'] });
+  m.box('stone', x0, y - 0.14, -w, x1, y - 0.004, w, CONCRETE, { skip: ['bottom'], uvScale: 1.4 });
+  m.box('plain', x0, y - 0.004, -w + 0.24, x1, y, w - 0.24, ASPHALT, { skip: ['bottom', 'front', 'back', 'left', 'right'] });
+  // The yellow line, dashed.
+  for (let x = x0 + 0.1; x < x1 - 0.1; x += 0.5) m.box('plain', x, y, -0.02, Math.min(x1 - 0.1, x + 0.28), y + 0.004, 0.02, '#e8c440', { skip: ['bottom', 'front', 'back', 'left', 'right'] });
+  // The sidewalks, a curb up from the road.
+  for (const s of [-1, 1]) m.box('stone', x0, y - 0.004, s > 0 ? w - 0.24 : -w, x1, y + 0.04, s > 0 ? w : -w + 0.24, CURB, { skip: ['bottom'] });
 }
 
-/** Rails along both sides of a deck. */
-function rails(m, x0, x1, y, width, { posts = 0.7, h = 0.4 } = {}) {
+/** Low concrete parapet walls along both sides. */
+function rails(m, x0, x1, y, width, { h = 0.26 } = {}) {
   const w = width / 2;
-  const n = Math.max(1, Math.round((x1 - x0) / posts));
-  for (const z of [-w, w]) {
-    for (let i = 0; i <= n; i++) {
-      const x = x0 + ((x1 - x0) * i) / n;
-      m.box('wood', x - 0.035, y, z - 0.035, x + 0.035, y + h, z + 0.035, PALETTE.wood[1], { skip: ['bottom'], uvScale: 2 });
-    }
-    m.beam('wood', [x0, y + h, z], [x1, y + h, z], 0.045, PALETTE.wood[0]);
-    m.beam('wood', [x0, y + h * 0.55, z], [x1, y + h * 0.55, z], 0.03, PALETTE.wood[0]);
-  }
+  for (const z of [-w, w]) m.box('stone', x0, y + 0.04, z - 0.05, x1, y + h, z + 0.05, CONCRETE, { skip: ['bottom'] });
 }
 
-/** The fixed parts of a bridge `len` long (local x from 0 at the inner end): abutments, trestles, deck and rails where the leaf is not. */
+/** A streetlight: a gray pole, an arm over the road and a lamp. */
+function lamp(m, x, y, z, side) {
+  m.cylinder('metal', x, y + 0.04, z, 0.018, 0.024, 0.8, 6, '#8a8e94');
+  m.beam('metal', [x, y + 0.82, z], [x, y + 0.84, z - side * 0.28], 0.02, '#8a8e94');
+  m.box('glow', x - 0.05, y + 0.78, z - side * 0.32, x + 0.05, y + 0.82, z - side * 0.22, '#ffe2a8', { skip: [] });
+}
+
+/** The fixed parts of a bridge `len` long (local x from 0 at the inner end): abutments, piers, deck and parapets where the leaf is not. */
 function fixedBridge(len, leaf, y, depth, w = 2) {
   const m = new Mesher();
-  // Stone footings at each end, down into the bank.
-  for (const x of [0, len]) m.box('stone', x - 0.25, y - depth, -w / 2 - 0.15, x + 0.25, y - 0.05, w / 2 + 0.15, STONE[0], { skip: ['bottom'] });
-  // Trestles into the water.
-  for (let x = 1.2; x < len - 0.8; x += 1.5) {
-    for (const z of [-w / 2 + 0.1, w / 2 - 0.1]) m.box('wood', x - 0.07, y - depth, z - 0.07, x + 0.07, y - 0.1, z + 0.07, PALETTE.wood[1], { skip: ['bottom'], uvScale: 2 });
-    m.beam('wood', [x, y - 0.5, -w / 2 + 0.1], [x, y - 0.5, w / 2 - 0.1], 0.05, PALETTE.wood[0]);
+  // Concrete abutments at each end, down into the bank.
+  for (const x of [0, len]) m.box('stone', x - 0.25, y - depth, -w / 2 - 0.12, x + 0.25, y - 0.14, w / 2 + 0.12, CONCRETE, { skip: ['bottom'] });
+  // Round piers into the water, a pair across under each span.
+  for (let x = 1.5; x < len - 1; x += 2) {
+    for (const z of [-w / 2 + 0.3, w / 2 - 0.3]) m.cylinder('stone', x, y - depth, z, 0.12, 0.14, depth - 0.14, 10, CONCRETE, { caps: false });
+    m.box('stone', x - 0.14, y - 0.3, -w / 2 + 0.16, x + 0.14, y - 0.14, w / 2 - 0.16, CONCRETE, { skip: ['bottom'] });
   }
-  if (!leaf) {
-    deck(m, 0, len, y, w);
-    rails(m, 0, len, y, w);
-  } else {
-    deck(m, 0, leaf[0], y, w);
-    rails(m, 0, leaf[0], y, w);
-    deck(m, leaf[1], len, y, w);
-    rails(m, leaf[1], len, y, w);
+  for (const [a, b] of leaf ? [[0, leaf[0]], [leaf[1], len]] : [[0, len]]) {
+    deck(m, a, b, y, w);
+    rails(m, a, b, y, w);
   }
-  // A lantern on a post at each end.
-  for (const x of [0.15, len - 0.15]) {
-    m.box('wood', x - 0.03, y, -w / 2 - 0.0, x + 0.03, y + 0.75, -w / 2 + 0.06, PALETTE.wood[1], { skip: ['bottom'] });
-    m.box('glow', x - 0.05, y + 0.62, -w / 2 - 0.05, x + 0.05, y + 0.75, -w / 2 + 0.05, '#ffb45a', { skip: ['bottom'] });
-  }
+  lamp(m, 0.3, y, -w / 2 + 0.1, -1);
+  lamp(m, len - 0.3, y, w / 2 - 0.1, 1);
   return m.finish();
 }
 
-/** The leaf: a deck hinged at its inner end (local origin) that runs out along +x for `len`. */
+/** A lifting span (kept for saves from before): a deck hinged at its inner end that runs out along +x for `len`. */
 function leafParts(len) {
   const m = new Mesher();
-  const w = 2;
-  deck(m, 0, len, 0, w, PALETTE.wood[2]);
-  rails(m, 0.1, len, 0, w, { posts: 0.6, h: 0.3 });
-  for (let x = 0.5; x < len; x += 1) m.beam('wood', [x, 0, -w / 2], [x, 0, w / 2], 0.06, PALETTE.wood[1]);
+  deck(m, 0, len, 0, 2);
+  rails(m, 0, len, 0, 2);
   return m.finish();
 }
 

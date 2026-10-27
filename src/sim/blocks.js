@@ -48,7 +48,7 @@ const isGrown = (b) => Boolean(BUILDINGS[b.type]?.auto);
 
 const RING_ZONES = new Set([ZONE_ID.res, ZONE_ID.dense, ZONE_ID.com, ...INDUSTRY_ZONES.map((z) => ZONE_ID[z])]);
 
-export const standing = (rating) => (rating >= 90 ? 'Jewel of the town' : rating >= 70 ? 'Fine courtyard' : rating >= 40 ? 'Pleasant close' : rating >= 10 ? 'Quiet close' : 'Hollow block');
+export const standing = (rating) => (rating >= 90 ? 'Best block on the island' : rating >= 70 ? 'Sought-after' : rating >= 40 ? 'Pleasant' : rating >= 10 ? 'Quiet' : 'Hollow block');
 
 /**
  * Finds every closed block on the map, and the tiles of each: `ring` (the

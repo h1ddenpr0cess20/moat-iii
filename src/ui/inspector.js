@@ -1,5 +1,4 @@
 import { BUILDINGS, CASTLE_LEVELS, GROWN, RANKS, ZONES, ZONE_NAME, money } from '../catalog.js';
-import { GROUND } from '../config.js';
 import { EDGES, wardOfTile } from '../world/wards.js';
 import { needsRoad } from '../world/buildings.js';
 import { describeTile, idx } from '../world/world.js';
@@ -179,15 +178,16 @@ export function createInspector(ctx) {
     const i = idx(x, y);
     const w = world.wards[wardOfTile(x, y)];
     const g = world.ground[i];
-    const parts = [...head(describeTile(world, x, y), `${w.name}${w.owned ? '' : ' · beyond the moat'}`)];
+    const parts = [...head(describeTile(world, x, y), `${w.name}${w.owned ? '' : ' · beyond the canals'}`)];
     const rows = [['Ground', ['Meadow', 'Rock', 'Iron ore', 'Water', 'Cliff', 'Shore'][g]]];
     if (world.realm[i]) {
       rows.push(['Soil', `${Math.round((world.fert[i] / 255) * 100)}% fertile`]);
       if (world.tree[i]) rows.push(['Trees', ['', 'a few', 'many', 'dense'][world.tree[i]] ?? 'many']);
-      if (g === GROUND.ROCK || g === GROUND.ORE) rows.push(['Left to cut', world.amount[i]]);
       if (world.zone[i]) rows.push(['Zoned', ZONES[ZONE_NAME[world.zone[i]]].name]);
-      const care = ['water', 'faith', 'cheer', 'health', 'security', 'commerce'].map((k) => [k, covered(game, k, x, y)]).filter(([, v]) => v > 0.05);
-      if (care.length) rows.push(['Looked after', care.map(([k, v]) => `${k} ${pct(v)}`).join(', ')]);
+      const NAMES = { security: 'police', fire: 'fire', education: 'schools', cheer: 'parks', health: 'health' };
+      const care = Object.keys(NAMES).map((k) => [k, covered(game, k, x, y)]).filter(([, v]) => v > 0.05);
+      rows.push(['Services', care.length ? care.map(([k, v]) => `${NAMES[k]} ${pct(v)}`).join(', ') : 'none reach here']);
+      rows.push(['Land value', pct(Math.max(0, Math.min(1, landValue(game, x + 0.5, y + 0.5) / 1.6)))]);
     }
     parts.push(kv(rows));
     if (!w.owned) parts.push(h('div.actions', {}, h('button.btn.gold', { onclick: () => ctx.dialogs.open('realm', { ward: w.id }) }, 'See on the district map')));

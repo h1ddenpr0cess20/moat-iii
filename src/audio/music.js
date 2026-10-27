@@ -3,34 +3,37 @@ import { room } from 'madness-engine/music/theory';
 import { hash2 } from '../rng.js';
 
 /**
- * The score: a lute, a recorder, a low drone and a frame drum, made on the
- * spot, wandering through the modes of the year (D dorian in spring, G
- * mixolydian in summer, A aeolian in autumn, a slow D phrygian in winter) in
- * a lilting six-eight. Phrase follows phrase without a break (each opens on
- * a bar of the lute alone, so it breathes without going quiet); the drum
- * comes in when the town is busy or the raiders are near.
+ * The score: California lo-fi, made on the spot. An electric piano on
+ * seventh chords, a round bass, a soft synth lead and a lazy swung beat,
+ * wandering through bright modes with the year (F lydian in spring, C major
+ * in summer, G mixolydian in autumn, a slower D dorian in winter). Phrase
+ * follows phrase without a break; the beat sits back when the island is
+ * quiet and comes forward when it is busy or a hurricane is coming.
  */
 
 const MODES = [
-  { root: 62, scale: [0, 2, 3, 5, 7, 9, 10], name: 'dorian' },
+  { root: 53, scale: [0, 2, 4, 6, 7, 9, 11], name: 'lydian' },
+  { root: 60, scale: [0, 2, 4, 5, 7, 9, 11], name: 'ionian' },
   { root: 55, scale: [0, 2, 4, 5, 7, 9, 10], name: 'mixolydian' },
-  { root: 57, scale: [0, 2, 3, 5, 7, 8, 10], name: 'aeolian' },
-  { root: 50, scale: [0, 1, 3, 5, 7, 8, 10], name: 'phrygian' },
+  { root: 50, scale: [0, 2, 3, 5, 7, 9, 10], name: 'dorian' },
 ];
 
 /** Progressions as scale degrees (0 is the tonic chord): four bars each. */
 const PROGRESSIONS = [
-  [0, 3, 0, 4], [0, 5, 3, 4], [0, 6, 3, 0], [0, 2, 3, 4], [5, 3, 0, 4], [0, 4, 5, 3],
+  [0, 5, 3, 4], [0, 3, 0, 4], [1, 4, 0, 0], [0, 2, 5, 4], [3, 4, 2, 5], [0, 5, 1, 4],
 ];
 
-/** The eighth note, in seconds, for each season. */
-const EIGHTH = [0.25, 0.23, 0.28, 0.34];
+/** The eighth note, in seconds, for each season: about ninety beats a minute, a little slower in winter. */
+const EIGHTH = [0.33, 0.31, 0.33, 0.37];
+/** How far the off-beats are pushed late. */
+const SWING = 0.18;
 
-/** Which eighths of the bar the arpeggio plucks, as chord tones. */
-const ARPS = [[0, 2, 1, 2, 1, 2], [0, 1, 2, 1, 2, 1], [0, 2, 1, 2, 0, 1], [0, 1, 2, 3, 2, 1]];
+/** Where the chord is struck in the bar, as eighths, and where the bass plays. */
+const COMPS = [[0, 3], [0, 3, 6], [0, 2.5, 5], [0, 4, 7]];
+const BASSES = [[0, 3.5, 4], [0, 4, 6.5], [0, 2, 4, 7], [0, 5]];
 
 /** Where the melody falls in the bar, as eighths. */
-const RHYTHMS = [[0, 3], [0, 2, 3], [0, 1, 2, 3, 5], [0, 3, 4], [0, 2, 4], [0, 3, 5]];
+const RHYTHMS = [[0, 3], [1, 3, 4], [0, 2, 3, 6], [2, 5], [0, 1.5, 4], [3, 5, 6]];
 
 export function createMusic(audio, { getState }) {
   let started = false;
@@ -40,67 +43,74 @@ export function createMusic(audio, { getState }) {
   let last = null;
 
   const degree = (mode, d, octave = 0) => mode.root + mode.scale[((d % 7) + 7) % 7] + 12 * (octave + Math.floor(d / 7));
+  const swung = (t0, e, slot) => t0 + slot * e + (Math.floor(slot) % 2 === 1 && slot % 1 === 0 ? SWING * e : 0);
 
-  const pluck = (at, midi, gain = 0.2, len = 1.1) => {
+  /** An electric piano: a sine with a bell on top, a slow wobble, a soft attack. */
+  const keys = (at, midi, gain = 0.07, len = 1.6) => {
     const f = NOTE(midi);
-    audio.tone({ at, freq: f, length: len, type: 'triangle', gain, attack: 0.004, out: bus });
-    audio.tone({ at, freq: f * 2.002, length: len * 0.4, type: 'sine', gain: gain * 0.3, attack: 0.002, out: bus });
-    audio.burst({ at, length: 0.03, type: 'bandpass', freq: f * 3, gain: gain * 0.22, q: 2, out: bus });
+    audio.tone({ at, freq: f, length: len, type: 'sine', gain, attack: 0.008, vibrato: 4.5, out: bus });
+    audio.tone({ at, freq: f * 1.003, length: len * 0.8, type: 'triangle', gain: gain * 0.35, attack: 0.01, out: bus });
+    audio.tone({ at, freq: f * 4, length: 0.25, type: 'sine', gain: gain * 0.12, attack: 0.002, out: bus });
   };
-  const flute = (at, midi, len, gain = 0.1) => {
+  const bass = (at, midi, len = 0.6, gain = 0.22) => {
     const f = NOTE(midi);
-    audio.tone({ at, freq: f, length: len, type: 'sine', gain, attack: 0.07, vibrato: 2.5, out: bus });
-    audio.tone({ at, freq: f * 2, length: len * 0.7, type: 'sine', gain: gain * 0.18, attack: 0.1, vibrato: 3, out: bus });
-    audio.burst({ at, length: len * 0.5, type: 'bandpass', freq: f * 2.5, gain: gain * 0.07, q: 4, out: bus });
+    audio.tone({ at, freq: f, length: len, type: 'sine', gain, attack: 0.01, out: bus });
+    audio.tone({ at, freq: f * 2, length: len * 0.5, type: 'triangle', gain: gain * 0.15, attack: 0.01, out: bus });
   };
-  const drum = (at, soft = 1) => {
-    audio.tone({ at, freq: 130, to: 58, length: 0.22, type: 'sine', gain: 0.32 * soft, out: bus });
-    audio.burst({ at, length: 0.12, type: 'lowpass', freq: 380, gain: 0.3 * soft, out: bus });
+  const lead = (at, midi, len, gain = 0.07) => {
+    const f = NOTE(midi);
+    audio.tone({ at, freq: f, length: len, type: 'triangle', gain, attack: 0.04, vibrato: 3, out: bus });
+    audio.tone({ at, freq: f * 2, length: len * 0.6, type: 'sine', gain: gain * 0.2, attack: 0.06, out: bus });
   };
-  const tap = (at, soft = 1) => audio.burst({ at, length: 0.05, type: 'bandpass', freq: 1700, q: 1.5, gain: 0.1 * soft, out: bus });
+  const kick = (at, soft = 1) => {
+    audio.tone({ at, freq: 110, to: 45, length: 0.28, type: 'sine', gain: 0.34 * soft, out: bus });
+    audio.burst({ at, length: 0.03, type: 'lowpass', freq: 900, gain: 0.08 * soft, out: bus });
+  };
+  const snare = (at, soft = 1) => {
+    audio.burst({ at, length: 0.16, type: 'bandpass', freq: 1900, q: 0.8, gain: 0.16 * soft, out: bus });
+    audio.tone({ at, freq: 190, length: 0.08, type: 'triangle', gain: 0.06 * soft, out: bus });
+  };
+  const hat = (at, soft = 1) => audio.burst({ at, length: 0.035, type: 'highpass', freq: 7000, q: 0.7, gain: 0.05 * soft, out: bus });
 
   const newPhrase = (state) => {
     seed++;
     const season = state.season;
     const mode = MODES[season];
-    const prog = PROGRESSIONS[Math.floor(hash2(seed, season, 3) * PROGRESSIONS.length)];
     phrase = {
-      mode, prog, arp: ARPS[Math.floor(hash2(seed, 5, 1) * ARPS.length)], bar: 0, e: EIGHTH[season],
-      lead: hash2(seed, 9, 2) < (season === 1 || season === 0 ? 0.7 : 0.45) ? 'flute' : 'lute',
-      drum: state.busy || state.threat,
+      mode, prog: PROGRESSIONS[Math.floor(hash2(seed, season, 3) * PROGRESSIONS.length)],
+      comp: COMPS[Math.floor(hash2(seed, 5, 1) * COMPS.length)], low: BASSES[Math.floor(hash2(seed, 6, 2) * BASSES.length)],
+      bar: 0, e: EIGHTH[season], busy: state.busy || state.threat,
     };
-    melodyAt = 5 + Math.floor(hash2(seed, 4, 4) * 5);
+    melodyAt = 5 + Math.floor(hash2(seed, 4, 4) * 4);
   };
 
   const scheduleBar = (t0, state) => {
     if (!phrase) newPhrase(state);
-    const { mode, prog, arp, e } = phrase;
+    const { mode, prog, comp, low, e } = phrase;
     const chord = prog[phrase.bar % prog.length];
     const rel = (x) => Math.max(0, x - ctx.currentTime);
-    const tones = [degree(mode, chord, 0), degree(mode, chord + 2, 0), degree(mode, chord + 4, 0), degree(mode, chord, 1)];
-    for (let k = 0; k < 6; k++) {
-      const tone = tones[arp[k]];
-      pluck(rel(t0 + k * e), tone + 12, k === 0 ? 0.24 : 0.15 + 0.03 * ((k + 1) % 2), 1.1);
-    }
-    pluck(rel(t0), degree(mode, chord, -1) + 12, 0.2, 2.2);
-    // The melody.
+    // The chord, as a seventh, voiced close and low in the middle of the piano.
+    const tones = [0, 2, 4, 6].map((d) => degree(mode, chord + d, 0));
+    for (const slot of comp) tones.forEach((m, i) => keys(rel(swung(t0, e, slot) + i * 0.012), m, slot ? 0.05 : 0.065, slot ? 1.1 : 1.8));
+    for (const slot of low) bass(rel(swung(t0, e, slot)), degree(mode, slot === 4 ? chord + 4 : chord, -2), e * 1.6);
+    // The melody, from the second bar.
     if (phrase.bar >= 1 && phrase.bar < 8) {
       const rhythm = RHYTHMS[Math.floor(hash2(seed, phrase.bar, 6) * RHYTHMS.length)];
       for (let n = 0; n < rhythm.length; n++) {
         const slot = rhythm[n];
-        const len = ((rhythm[n + 1] ?? 6) - slot) * e;
-        melodyAt = Math.max(2, Math.min(11, melodyAt + Math.floor(hash2(seed, phrase.bar * 7 + n, 8) * 5) - 2));
-        const midi = degree(mode, melodyAt, 1);
-        if (phrase.lead === 'flute') flute(rel(t0 + slot * e), midi, len * 1.15);
-        else pluck(rel(t0 + slot * e), midi + 12, 0.22, Math.max(0.6, len * 1.6));
+        const len = ((rhythm[n + 1] ?? 8) - slot) * e;
+        melodyAt = Math.max(3, Math.min(11, melodyAt + Math.floor(hash2(seed, phrase.bar * 7 + n, 8) * 5) - 2));
+        lead(rel(swung(t0, e, slot)), degree(mode, melodyAt, 1), Math.min(1.6, len * 1.1));
       }
     }
-    if (phrase.drum) {
-      drum(rel(t0), 1);
-      tap(rel(t0 + 2 * e), 0.8); drum(rel(t0 + 3 * e), 0.7); tap(rel(t0 + 5 * e), 0.6);
-    }
+    // The beat: kick on one and three, the snare on two and four, hats on the eighths; it sits back when the island is quiet.
+    const soft = phrase.busy ? 1 : 0.55;
+    kick(rel(t0), soft); kick(rel(swung(t0, e, 4)), soft * 0.9);
+    if (hash2(seed, phrase.bar, 9) < 0.5) kick(rel(swung(t0, e, 5)), soft * 0.6);
+    snare(rel(swung(t0, e, 2)), soft); snare(rel(swung(t0, e, 6)), soft);
+    for (let k = 0; k < 8; k++) hat(rel(swung(t0, e, k)), soft * (k % 2 ? 0.6 : 1));
     phrase.bar++;
-    return 6 * e;
+    return 8 * e;
   };
 
   const tick = () => {
@@ -131,7 +141,8 @@ export function createMusic(audio, { getState }) {
       verb.buffer = room(ctx, 2.4, 2.2);
       bus.connect(audio.music);
       bus.connect(verb).connect(wet).connect(audio.music);
-      drone = audio.loop({ source: 'sawtooth', freq: NOTE(MODES[1].root - 24), filters: [{ type: 'lowpass', freq: 220, q: 0.6 }], out: audio.music });
+      // A warm pad under it all, like tape hiss with a note in it.
+      drone = audio.loop({ source: 'triangle', freq: NOTE(MODES[1].root - 24), filters: [{ type: 'lowpass', freq: 400, q: 0.5 }], out: audio.music });
       drone?.set({ gain: 0.03 });
       next = ctx.currentTime + 1.5;
       timer = setInterval(tick, 250);

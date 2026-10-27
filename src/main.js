@@ -21,7 +21,7 @@ const loading = {
     const bar = document.getElementById('loading-bar'), label = document.getElementById('loading-text');
     if (bar) bar.style.width = `${Math.round(f * 100)}%`;
     if (label && text) label.textContent = text;
-    document.title = f >= 1 ? 'Moat' : `Moat · ${Math.round(f * 100)}%`;
+    document.title = f >= 1 ? 'Moat III: The Island' : `Moat III · ${Math.round(f * 100)}%`;
   },
   done() { document.getElementById('loading')?.remove(); },
 };

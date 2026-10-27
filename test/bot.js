@@ -30,9 +30,11 @@ export function createBot(game) {
         const ring = d.ind > d.res && d.ind > d.com ? 'ind' : d.com > d.res ? 'com' : blocks % 3 === 2 ? 'dense' : 'res';
         let done = false;
         for (const N of [12, 10]) for (let k = 0; k < 120 && !done; k++) {
-          const a = k * 2.4, r = 4 + k * 0.25;
+          const a = k * 2.4, r = 8 + k * 0.3;
           const x = Math.round(C + Math.cos(a) * r - N / 2), y = Math.round(C + Math.sin(a) * r - N / 2);
-          if (!planBlock(game, x, y, x + N - 1, y + N - 1, { ring, core: 'none' }).ok) continue;
+          // A whole block, with a full ring of lots and a core to put a plaza in, not one squeezed against the canal.
+          const plan = planBlock(game, x, y, x + N - 1, y + N - 1, { ring, core: 'res' });
+          if (!plan.ok || plan.core.length < 9 || plan.ring.length < 4 * N) continue;
           done = true;
           if (!buildBlock(game, x, y, x + N - 1, y + N - 1, { ring, core: 'none' }).ok) break;
           connect(game, { x, y, w: N, d: N });

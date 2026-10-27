@@ -43,12 +43,10 @@ export function createSound({ game, scene }) {
     no() { audio.tone({ freq: 120, to: 80, length: 0.18, type: 'square', gain: 0.1 }); audio.burst({ length: 0.08, type: 'lowpass', freq: 400, gain: 0.3 }); },
     open() { audio.burst({ length: 0.12, type: 'highpass', freq: 3000, gain: 0.12 }); },
     built() { bell(0, 81, 1.6, 0.14); knock(0, 0.25); },
-    coin() { audio.jingle([88, 93, 95], { step: 0.06, type: 'sine', gain: 0.18, length: 0.4 }); },
-    harvest() { audio.jingle([67, 71, 74, 79], { step: 0.1, type: 'triangle', gain: 0.18, length: 0.5 }); },
     toll() { bell(0, 57, 4, 0.3); bell(1.6, 57, 4, 0.24); },
-    horn() { audio.tone({ freq: 146, to: 138, length: 1.3, type: 'sawtooth', gain: 0.16, attack: 0.12, vibrato: 1.5 }); audio.tone({ at: 1.5, freq: 196, to: 185, length: 1.5, type: 'sawtooth', gain: 0.16, attack: 0.12, vibrato: 1.5 }); },
+    // A storm siren: a wail that rises and falls, twice.
+    horn() { for (const at of [0, 1.6]) { audio.tone({ at, freq: 420, to: 820, length: 0.8, type: 'sawtooth', gain: 0.07, attack: 0.1 }); audio.tone({ at: at + 0.8, freq: 820, to: 420, length: 0.8, type: 'sawtooth', gain: 0.07 }); } },
     alarm() { for (let k = 0; k < 6; k++) bell(k * 0.18, 84, 0.6, 0.2); audio.burst({ length: 1.4, type: 'bandpass', freq: 1800, q: 0.6, gain: 0.12 }); },
-    clash() { for (let k = 0; k < 7; k++) audio.burst({ at: k * 0.11, length: 0.12, type: 'highpass', freq: 2400 + 400 * (k % 3), gain: 0.3, q: 4 }); },
     fanfare() { audio.jingle([62, 69, 74, 78, 81], { step: 0.13, type: 'sawtooth', gain: 0.1, length: 0.6, attack: 0.02 }); },
     arrive() { audio.jingle([72, 76], { step: 0.14, type: 'sine', gain: 0.1, length: 0.5 }); },
     gate() { audio.tone({ freq: 70, to: 55, length: 0.9, type: 'sawtooth', gain: 0.08 }); for (let k = 0; k < 8; k++) audio.burst({ at: k * 0.1, length: 0.04, type: 'bandpass', freq: 600, gain: 0.2 }); },
@@ -94,7 +92,6 @@ export function createSound({ game, scene }) {
   game.on('arrival', () => { if (ok('arrive', 1.5)) SFX.arrive(); });
   game.on('gate', () => SFX.gate());
   game.on('gameover', () => SFX.dirge());
-  game.on('week', () => { if (threat > 0 && hash2(game.week, 3, 1) < 0.2) threat = 0; });
 
   const world = game.world;
   /** What is around the camera, counted every so often: water, trees, and sites where builders work. */

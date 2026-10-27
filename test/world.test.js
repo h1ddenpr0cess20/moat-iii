@@ -57,7 +57,7 @@ test('digging the moat out around a ward takes it in, and fills the old moat', (
   assert.ok(before < 0, 'the old moat holds water');
   completeAnnex(game, world.wards[east]);
   assert.ok(world.wards[east].owned && world.wards[home].owned);
-  assert.equal(ownedCount(world), 2);
+  assert.equal(ownedCount(world), 3, 'the home district, the one south of it that comes with the island, and this one');
   assert.ok(heightAt(world, (HOME_WARD + 1) * WARD, CENTER) > 0.12, 'the old moat is filled in');
   assert.ok(heightAt(world, (HOME_WARD + 2) * WARD, CENTER) < 0, 'the new border is a moat');
   assert.ok(world.gates.some((g) => g.ward === east), 'the new ward has a gate of its own');

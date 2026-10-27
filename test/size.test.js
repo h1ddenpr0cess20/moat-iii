@@ -24,7 +24,7 @@ for (const wards of [7, 9, 11]) {
     assert.equal(r.wards, wards * wards);
     assert.equal(r.CENTER, (wards * 30) / 2);
     assert.ok(r.homeOk, 'the castle is in the middle ward');
-    assert.equal(r.gates, 4);
+    assert.equal(r.gates, 6, 'the home district and the one south of it have six bridges out between them');
     assert.equal(r.buildings, r.back, 'the save brings every building back');
     assert.equal(r.h, (wards * 60 + 1) ** 2);
   });

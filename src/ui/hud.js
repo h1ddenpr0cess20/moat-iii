@@ -54,7 +54,7 @@ export function createHud(ctx) {
       + `<div class="row"><span>Commercial taxes</span><span class="good">+${money(t.com ?? 0)}</span></div>`
       + `<div class="row"><span>Industrial taxes</span><span class="good">+${money(t.ind ?? 0)}</span></div>`
       + `<div class="row"><span>Budgets</span><span class="bad">−${money(r.upkeep ?? 0)}</span></div>`
-      + '<div class="dim">A week. Set the tax rate and the budget in the ledger.</div>';
+      + '<div class="dim">A week. Set the tax rate and the service budget in the Budget (L).</div>';
   });
   chip('pop', icon('people', 20), () => {
     const p = game.pop, r = game.report;

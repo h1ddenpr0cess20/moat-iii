@@ -41,7 +41,7 @@ export function menuDialog(ctx) {
       body.replaceChildren(
         h('div.grid2', {},
           h('div', {}, h('h3', {}, 'The game'),
-            h('div.actions', {}, h('button.btn.gold', { onclick: () => { ctx.dialogs.close(); } }, 'Back to the island'), h('button.btn', { onclick: () => { flow.save(); ctx.say('The game is saved.', 'good'); ctx.dialogs.close(); } }, 'Save'), h('button.btn', { disabled: !saved, title: 'Back to the last save of this realm', onclick: () => flow.load() }, 'Load')),
+            h('div.actions', {}, h('button.btn.gold', { onclick: () => { ctx.dialogs.close(); } }, 'Back to the island'), h('button.btn', { onclick: () => { flow.save(); ctx.say('The game is saved.', 'good'); ctx.dialogs.close(); } }, 'Save'), h('button.btn', { disabled: !saved, title: 'Back to the last save of this island', onclick: () => flow.load() }, 'Load')),
             h('p.dim', {}, saved ? `Last saved: ${saved}.` : 'Nothing saved yet. The game saves itself each season.'),
             h('div.actions', {}, h('button.btn', { onclick: () => flow.newGame() }, 'A new island…'), h('button.btn', { onclick: () => { ctx.steward.reset(); ctx.say('Your chief of staff will brief you again.', 'info'); } }, 'Hear the hints again'))),
           h('div', {}, h('h3', {}, 'Sound'), mute, slider('Music', 'music'), slider('Effects', 'sfx'),

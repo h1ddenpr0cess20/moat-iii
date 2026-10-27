@@ -18,11 +18,11 @@ import { heightAt } from '../world/world.js';
 
 export const TOOLS = [
   { id: 'select', icon: 'select', name: 'Look', key: '1', tip: 'Look at things and select them. Drag to move the map.' },
-  { id: 'road', icon: 'road', name: 'Roads', key: '2', tip: 'Drag to lay a road. Houses and shops grow along streets.' },
-  { id: 'zone', icon: 'zone', name: 'Zones', key: '3', tip: 'Drag to zone land for houses, shops, fields and orchards.' },
+  { id: 'road', icon: 'road', name: 'Streets', key: '2', tip: 'Drag to lay a street. Every zone grows along streets.' },
+  { id: 'zone', icon: 'zone', name: 'Zones', key: '3', tip: 'Drag to zone land for homes, shops and industry.' },
   { id: 'block', icon: 'block', name: 'Blocks', key: '4', tip: 'Stamp a donut block: a street loop, a ring of homes and a heart.' },
   { id: 'build', icon: 'build', name: 'Build', key: '5', tip: 'Set down a building.' },
-  { id: 'demolish', icon: 'demolish', name: 'Clear', key: '6', tip: 'Bulldoze buildings, roads and zones, and clear trees and rock.' },
+  { id: 'demolish', icon: 'demolish', name: 'Bulldoze', key: '6', tip: 'Bulldoze buildings, roads and zones, and clear trees and rock.' },
 ];
 
 export const BLOCK_SIZES = { small: 10, medium: 14, large: 18 };
@@ -120,7 +120,7 @@ export function createTools(ctx) {
     const inCore = block && block.core.includes(idx(cx, cy));
     if (inCore) return `<div class="good">In the heart of ${block.name === 'Hollow Block' ? 'a block' : 'the ' + block.name}: ${block.homes} homes around it will share it.</div>`;
     if (block) return '<div class="dim">This is in the ring: a heart goes in the middle of the block.</div>';
-    if (heart) return '<div class="dim">★ Put this in the middle of a ring of houses (a donut block) and it serves them all, with a courtyard bonus.</div>';
+    if (heart) return '<div class="dim">★ Put this in the middle of a ring of homes (a donut block) and it serves them all, with a block bonus.</div>';
     return '';
   };
 
