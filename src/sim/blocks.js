@@ -34,6 +34,8 @@ export const HEARTS = Object.freeze({
   police: { name: 'Precinct Block', fine: 0.35, why: 'a station that sees the whole street' },
   firehouse: { name: 'Firehouse Block', fine: 0.35, why: 'a fire station in reach of every door' },
   hospital: { name: 'Medical Block', fine: 0.5, why: 'a hospital in reach' },
+  library: { name: 'Library Block', fine: 0.55, why: 'a reading room on the corner' },
+  clinic: { name: 'Clinic Block', fine: 0.4, why: 'a doctor a short walk away' },
 });
 
 /** What an open core is worth if it is worked: by zone, its name and its share of the heart. */

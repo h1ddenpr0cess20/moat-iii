@@ -40,7 +40,8 @@ export const FARM_RADIUS = 0;
  * they cost; `weeks` how long they take; `jobs` how many work there; `cap`
  * how many live there. `auto` ones grow by themselves on zoned land. `serve`
  * is what a civic building gives the tiles around it; `upkeep` its weekly
- * budget.
+ * budget. `bonus` is what it does for the whole island (see sim/bonus.js);
+ * `noisy` how loud it is to the homes around it; `where` the ground it needs.
  */
 export const BUILDINGS = Object.freeze({
   // Grown on the zones.
@@ -64,12 +65,28 @@ export const BUILDINGS = Object.freeze({
   school: { name: 'School', cat: 'civic', size: [3, 3], cost: { gold: 90 }, weeks: 8, crew: 3, jobs: 12, upkeep: 1.8, serve: { education: 1, radius: 14 }, desc: 'Educated people want better homes and bring better firms.' },
   park: { name: 'Park', cat: 'civic', size: [3, 3], cost: { gold: 20 }, weeks: 2, crew: 2, upkeep: 0.3, serve: { cheer: 0.7, radius: 9 }, desc: 'Palms, a lawn, a fountain. Raises the land around it.' },
   plaza: { name: 'Plaza', cat: 'civic', size: [3, 3], cost: { gold: 45 }, weeks: 3, crew: 2, upkeep: 0.5, serve: { cheer: 1, radius: 11 }, desc: 'Pavers, cypresses and café umbrellas. The best heart for a donut block.' },
+  clinic: { name: 'Urgent Care', cat: 'safety', size: [2, 2], cost: { gold: 50 }, weeks: 4, crew: 2, jobs: 6, upkeep: 0.8, serve: { health: 0.6, radius: 10 }, desc: 'A walk-in clinic in a stucco box. Not a hospital, but close by.' },
+  library: { name: 'Public Library', cat: 'civic', size: [2, 2], cost: { gold: 40 }, weeks: 4, crew: 2, jobs: 4, upkeep: 0.6, serve: { education: 0.6, cheer: 0.2, radius: 10 }, desc: 'A glass reading room under a butterfly roof. Some of what a school does, for a corner lot.' },
+  university: { name: 'University', cat: 'civic', size: [4, 4], cost: { gold: 320 }, weeks: 16, crew: 5, jobs: 40, upkeep: 4, serve: { education: 1, radius: 24 }, rank: 2, bonus: { tax: { com: 0.08, ind: 0.12 }, growth: 0.1 }, desc: 'Red tile, a bell tower and a quad. Educates a wide circle, and its graduates found startups: shops and industry pay more, and firms grow up sooner.' },
+
+  // Getting to the island, and getting things off it.
+  seaport: { name: 'Container Port', cat: 'transport', size: [4, 4], cost: { gold: 260 }, weeks: 14, crew: 5, jobs: 30, upkeep: 2.4, rank: 1, noisy: 0.6, where: { sea: { radius: 5, count: 12 } }, bonus: { demand: { ind: 0.25 }, tax: { ind: 0.2 }, pull: 'ind' }, desc: 'Cranes, a quay and stacks of boxes. Ships what the island makes: industry wants more land and pays more, and grows toward the port. On the shore of the open sea, not a canal. Noisy.' },
+  airport: { name: 'Airport', cat: 'transport', size: [6, 10], cost: { gold: 900 }, weeks: 30, crew: 8, jobs: 60, upkeep: 6, rank: 2, noisy: 1, bonus: { demand: { com: 0.2, res: 0.1 }, tax: { com: 0.15 }, tourism: 4, tourismK: 0.5, growth: 0.2, pull: 'com' }, desc: 'A runway, a glass terminal and a control tower. Brings tourists and business: shops want more land and pay more, every attraction draws half as many visitors again, and towers go up sooner. Very loud: keep it away from the homes.' },
+
+  // The cloud, on the island.
+  datacenter: { name: 'Data Center', cat: 'transport', size: [3, 4], cost: { gold: 380 }, weeks: 14, crew: 5, jobs: 12, upkeep: 2, rank: 1, noisy: 0.3, bonus: { tax: { com: 0.1, ind: 0.06 }, demand: { com: 0.1, ind: 0.05 }, growth: 0.08 }, desc: 'Windowless halls of servers, a yard of chillers on the roof and backup generators out back. The island’s startups run on it: shops and industry want more land and pay more, and firms grow up sooner. Its fans hum all night.' },
+
+  // Somewhere to go on a Saturday.
+  marina: { name: 'Marina', cat: 'leisure', size: [3, 3], cost: { gold: 140 }, weeks: 8, crew: 3, jobs: 6, upkeep: 1, where: { sea: { radius: 4, count: 8 } }, serve: { cheer: 0.8, radius: 12 }, bonus: { tourism: 2.5 }, desc: 'Docks, sailboats and a yacht club. Cheers the shore and brings in visitors. On the open water.' },
+  stadium: { name: 'Stadium', cat: 'leisure', size: [5, 5], cost: { gold: 420 }, weeks: 20, crew: 6, jobs: 20, upkeep: 3, rank: 2, noisy: 0.4, serve: { cheer: 1, radius: 22 }, bonus: { tourism: 4, mood: 3 }, desc: 'A bowl of seats under the lights, for the island’s own team. Cheers half the island, lifts the mood, and fills with visitors on game day.' },
 });
 
 /** The order the build menu shows them in. */
 export const CATEGORIES = Object.freeze([
   { id: 'safety', name: 'Safety' },
   { id: 'civic', name: 'Civic' },
+  { id: 'transport', name: 'Infrastructure' },
+  { id: 'leisure', name: 'Leisure' },
 ]);
 
 /** The buildings the zones grow, by zone and level. */
@@ -122,7 +139,15 @@ export const START = Object.freeze({
   pop: { children: 3, adults: 10, elders: 1 },
 });
 
-export const money = (n) => `$${Math.round(n).toLocaleString('en-US')}k`;
+/** Money as people write it: the books are kept in thousands, so 450 is $450,000 and 1,250 is $1.25M. */
+export function money(n) {
+  const sign = n < 0 ? '−' : '';
+  const k = Math.abs(n);
+  const short = (x, unit) => `${sign}$${(+x.toFixed(x >= 100 ? 0 : x >= 10 ? 1 : 2)).toLocaleString('en-US')}${unit}`;
+  if (k >= 1e6) return short(k / 1e6, 'B');
+  if (k >= 1000) return short(k / 1000, 'M');
+  return `${sign}$${Math.round(k * 1000).toLocaleString('en-US')}`;
+}
 export const costText = (cost) => Object.entries(cost).filter(([, n]) => n > 0).map(([, n]) => money(n)).join(', ');
 export const canPay = (stock, cost) => Object.entries(cost).every(([k, n]) => (stock[k] ?? 0) >= n);
 export function pay(stock, cost, k = 1) {

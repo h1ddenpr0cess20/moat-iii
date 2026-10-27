@@ -123,16 +123,21 @@ export function lightAt(t, maxElevation) {
   };
 }
 
+/** The domes' radius at their smallest, inside the backdrop's. */
+const RADIUS = 296;
+
 /** The domes laid over the backdrop: dusk and night, each fading in or out with `opacity`. */
 export function createSkyDomes(GFX, scene) {
   const make = (canvas, order) => {
     const map = new GFX.CanvasTexture(canvas);
     map.colorSpace = GFX.SRGBColorSpace;
     const material = new GFX.MeshBasicMaterial({ map, side: GFX.BackSide, transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
-    const dome = new GFX.Mesh(new GFX.SphereGeometry(296, 48, 24), material);
+    const dome = new GFX.Mesh(new GFX.SphereGeometry(RADIUS, 48, 24), material);
     dome.renderOrder = order;
     dome.frustumCulled = false;
-    dome.onBeforeRender = (r, s, cam) => { dome.position.copy(cam.position); dome.updateMatrixWorld(); };
+    // Always round the whole scene: drawn after the land (it is see-through), a dome smaller than the view would lay
+    // the dusk or the night sky over the ground beyond it, and from far out the far side of the island went brown, or black.
+    dome.onBeforeRender = (r, s, cam) => { dome.position.copy(cam.position); dome.scale.setScalar(Math.max(1, (cam.far * 0.9) / RADIUS)); dome.updateMatrixWorld(); };
     scene.add(dome);
     return { dome, material };
   };

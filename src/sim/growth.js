@@ -8,6 +8,7 @@ import { calendar } from './calendar.js';
 import { qualityAt } from './blocks.js';
 import { covered } from './coverage.js';
 import { headcount, smogAt } from './people.js';
+import { bonusOf, noiseAt, pullers } from './bonus.js';
 import { completeAnnex } from './actions.js';
 import { demand } from './economy.js';
 
@@ -58,9 +59,27 @@ export function construction(game) {
 
 /** What land is worth for a home or a shop: what looks after it, a good block, the water, and no smoke. */
 export const landValue = (game, x, y) => covered(game, 'cheer', x, y) * 0.8 + covered(game, 'security', x, y) * 0.5 + covered(game, 'education', x, y) * 0.5
-  + covered(game, 'health', x, y) * 0.3 + qualityAt(game, x, y) * 1.4 - smogAt(game, x, y) * 1.2 - Math.hypot(x - CENTER, y - CENTER) * 0.012;
+  + covered(game, 'health', x, y) * 0.3 + qualityAt(game, x, y) * 1.4 - smogAt(game, x, y) * 1.2 - noiseAt(game, x, y) * 0.9 - Math.hypot(x - CENTER, y - CENTER) * 0.012;
 
-const valueAt = (game, zone) => (zone === 'ind' ? (x, y) => -Math.hypot(x - CENTER, y - CENTER) * 0.01 : (x, y) => landValue(game, x, y));
+/** How much a port or an airport draws a zone's firms to a spot: most beside it, nothing past twenty-four tiles. */
+const pullAt = (spots, x, y) => spots.reduce((n, [px, py]) => n + Math.max(0, 1 - Math.hypot(x - px, y - py) / 24), 0);
+
+function valueAt(game, zone) {
+  const spots = pullers(game, zone);
+  if (zone === 'ind') return (x, y) => -Math.hypot(x - CENTER, y - CENTER) * 0.01 + pullAt(spots, x, y) * 0.6;
+  return (x, y) => landValue(game, x, y) + pullAt(spots, x, y) * 0.4;
+}
+
+/**
+ * What a building needs to rise from `level` to the next: land worth so much
+ * and a city so big. The airport and the university bring the big firms
+ * sooner, so a smaller city will do.
+ */
+export function upgradeNeed(game, zone, level) {
+  const need = level === 1 ? { v: 0.45, pop: zone === 'com' ? 250 : 120 } : { v: 1.1, pop: zone === 'com' ? 2500 : zone === 'dense' ? 1500 : 800 };
+  need.pop = Math.round(need.pop * (1 - bonusOf(game).growth));
+  return need;
+}
 
 /** Starts a building of the zone's kind on the best plot there is: private money, so it costs the city nothing. Returns it, or null. */
 export function spawn(game, zone, level) {
@@ -98,7 +117,7 @@ function upgrade(game, b, zone, want) {
   const people = headcount(game);
   const v = landValue(game, cx, cy);
   const edu = covered(game, 'education', cx, cy);
-  const need = b.level === 1 ? { v: 0.45, pop: zone === 'com' ? 250 : 120 } : { v: 1.1, pop: zone === 'com' ? 2500 : zone === 'dense' ? 1500 : 800 };
+  const need = upgradeNeed(game, zone, b.level);
   if (want < 0.05 || v < need.v || people < need.pop) return false;
   if (zone === 'ind' && b.level === 2 && edu < 0.3) return false;
   if (zone !== 'ind' && (b.eff ?? 1) < 0.5 && BUILDINGS[b.type].jobs) return false;

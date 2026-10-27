@@ -2,6 +2,7 @@ import { BUILDINGS, CASTLE_LEVELS, RANKS, money } from '../catalog.js';
 import { jobsOf, priorityOf } from '../sim/economy.js';
 import { headcount, setPriority, setTax } from '../sim/game.js';
 import { ownedCount } from '../world/wards.js';
+import { bonusLines, bonusOf } from '../sim/bonus.js';
 import { fill, h, num, round } from './dom.js';
 
 /**
@@ -19,7 +20,7 @@ const taxWord = (t) => (t <= 0.05 ? 'Low' : t <= 0.09 ? 'Fair' : t <= 0.13 ? 'Hi
 function treasury(ctx, body) {
   const { game } = ctx;
   const r = game.report, t = r.taxSplit ?? {};
-  const rows = [['Residential taxes', t.res ?? 0], ['Commercial taxes', t.com ?? 0], ['Industrial taxes', t.ind ?? 0], ['Services', -(r.upkeep ?? 0)]];
+  const rows = [['Residential taxes', t.res ?? 0], ['Commercial taxes', t.com ?? 0], ['Industrial taxes', t.ind ?? 0], t.tour ? ['Visitors', t.tour] : null, ['Services', -(r.upkeep ?? 0)]].filter(Boolean);
   const table = h('table', {}, h('tbody', {}, ...rows.map(([k, v]) => h('tr', {}, h('td', {}, k), h('td.r', { class: v >= 0 ? 'good' : 'bad' }, `${v >= 0 ? '+' : '−'}${money(Math.abs(v))}`))),
     h('tr', {}, h('td', {}, h('b', {}, 'Each week')), h('td.r', { class: (r.delta ?? 0) >= 0 ? 'good' : 'bad' }, h('b', {}, `${(r.delta ?? 0) >= 0 ? '+' : '−'}${money(Math.abs(r.delta ?? 0))}`)))));
   const slider = h('input', { type: 'range', min: 0, max: 20, step: 1, value: Math.round(game.tax * 100), 'aria-label': 'Tax rate' });
@@ -46,7 +47,11 @@ function treasury(ctx, body) {
     h('div.grid2', {},
       h('div', {}, h('h3', {}, 'Funds'), h('div.stat', {}, h('span', {}, 'In the bank'), h('b', {}, money(game.stock.gold))), table,
         game.blockGain?.tax > 0.001 ? h('p.dim', {}, `Donut blocks add ${(game.blockGain.tax * 100).toFixed(1)}% to your taxes.`) : null,
-        h('h3', {}, 'Demand'), bar('Residential', d.res, '#59b35f'), bar('Commercial', d.com, '#4f8fd6'), bar('Industrial', d.ind, '#d6b24f')),
+        h('h3', {}, 'Demand'), bar('Residential', d.res, '#59b35f'), bar('Commercial', d.com, '#4f8fd6'), bar('Industrial', d.ind, '#d6b24f'),
+        h('h3', {}, 'Landmarks'),
+        bonusOf(game).sources.length
+          ? h('div', {}, ...bonusOf(game).sources.map((type) => h('div', { html: `<b>${BUILDINGS[type].name}</b> <span class="dim">· ${bonusLines(BUILDINGS[type]).join(' · ')}</span>` })))
+          : h('p.dim', {}, 'A port, an airport, a university, a data center or a stadium does something for the whole island. You have none yet.')),
       h('div', {}, h('h3', {}, 'Tax rate'), slider, label,
         h('p.dim', {}, 'High taxes fill the bank and empty the city. At 9% or under people are content; over it, they grumble and firms stay away.'),
         h('h3', {}, 'Service budget'), budget, blabel,
@@ -65,10 +70,11 @@ function stores(ctx, body) {
     h('div.table-wrap', {}, h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, 'Service'), h('th.r', {}, 'Reaches'), h('th', {}, ''))), h('tbody', {},
       line('Police', c.security, `${count('police')} stations · crime ${Math.round(r.crime ?? 0)}`),
       line('Fire', c.fire, `${count('firehouse')} stations`),
-      line('Schools', c.education, `${count('school')} schools`),
-      line('Parks', c.cheer, `${count('park')} parks, ${count('plaza')} plazas`),
-      line('Health', c.health, `${count('hospital')} hospitals`)))),
-    (c.smog ?? 0) > 0.05 ? h('p.warn', {}, `Smog from factories reaches ${Math.round(c.smog * 100)}% of homes. Keep industry back from where people live.`) : null);
+      line('Schools', c.education, `${count('school')} schools, ${count('library')} libraries, ${count('university')} universities`),
+      line('Parks', c.cheer, `${count('park')} parks, ${count('plaza')} plazas, ${count('marina')} marinas, ${count('stadium')} stadiums`),
+      line('Health', c.health, `${count('hospital')} hospitals, ${count('clinic')} clinics`)))),
+    (c.smog ?? 0) > 0.05 ? h('p.warn', {}, `Smog from factories reaches ${Math.round(c.smog * 100)}% of homes. Keep industry back from where people live.`) : null,
+    (c.noise ?? 0) > 0.05 ? h('p.warn', {}, `Noise from the airport, the port and the like reaches ${Math.round(c.noise * 100)}% of homes.`) : null);
 }
 
 function labor(ctx, body) {

@@ -1,5 +1,6 @@
 import { BUILDINGS } from '../catalog.js';
 import { clamp } from '../rng.js';
+import { bonusOf, noiseAt } from './bonus.js';
 import { computeCoverage, covered } from './coverage.js';
 
 /**
@@ -27,13 +28,14 @@ export function housingCap(game, { building = true } = {}) {
 
 /** What the houses are looked after by, averaged over the people who live in them. */
 function care(game) {
-  const out = { security: 0, fire: 0, education: 0, cheer: 0, health: 0, smog: 0 };
+  const out = { security: 0, fire: 0, education: 0, cheer: 0, health: 0, smog: 0, noise: 0 };
   let weight = 0;
   for (const b of game.world.housing ?? []) {
     const w = BUILDINGS[b.type].cap;
     const cx = b.x + b.w / 2, cy = b.y + b.d / 2;
-    for (const k of Object.keys(out)) if (k !== 'smog') out[k] += covered(game, k, cx, cy) * w;
+    for (const k of Object.keys(out)) if (k !== 'smog' && k !== 'noise') out[k] += covered(game, k, cx, cy) * w;
     out.smog += smogAt(game, cx, cy) * w;
+    out.noise += noiseAt(game, cx, cy) * w;
     weight += w;
   }
   for (const k of Object.keys(out)) out[k] = weight ? out[k] / weight : 0;
@@ -57,7 +59,8 @@ export function mood(game) {
   const c = care(game);
   r.care = c;
   let h = 46;
-  h += 9 * c.security + 4 * c.fire + 7 * c.education + 9 * c.cheer + 6 * c.health - 14 * c.smog;
+  h += 9 * c.security + 4 * c.fire + 7 * c.education + 9 * c.cheer + 6 * c.health - 14 * c.smog - 10 * c.noise;
+  h += bonusOf(game).mood;
   h -= (game.tax - 0.09) * 120;
   const idle = r.workforce ? (r.idle ?? 0) / r.workforce : 0;
   if (idle > 0.1) h -= (idle - 0.1) * 50;
