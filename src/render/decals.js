@@ -23,8 +23,12 @@ const LIFT = 0.03;
  */
 const PAD = 8;
 const STRIDE = CELL + 2 * PAD;
-/** The roads' atlas: a column for each of the 16 ways a road meets its neighbors, and one that is solid. */
-const ROAD_COLS = 17, ROAD_ROWS = 8;
+/** The roads' atlas: a column for each of the 16 ways a road meets its neighbors, and one that is solid; four rows (variants) for each kind of road. */
+const ROAD_COLS = 17, ROAD_ROWS = 12;
+/** The atlas rows each kind of road begins at. */
+const ROAD_ROW = { [ROAD.DIRT]: 0, [ROAD.COBBLE]: 4, [ROAD.AVENUE]: 8 };
+/** An avenue's half, by the way it meets its neighbors: which side its other half is on (N 1, E 2, S 4, W 8). Where both halves run straight on, one side of each is the other half. */
+const AVENUE_HALF = { 7: 2, 13: 8, 11: 1, 14: 4 };
 const SOLID = 16;
 /** The fields' atlas: a column for each stage of the year, a row for each crop and each way its rows run. */
 const FIELD_COLS = 6, FIELD_ROWS = 8;
@@ -67,13 +71,13 @@ function surface(w, h) {
 
 const seeded = (seed) => { let s = seed; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; };
 
-/** The roads: 16 shapes (which of N, E, S, W it joins) and a solid one, by 4 variants by 2 kinds. */
+/** The roads: 16 shapes (which of N, E, S, W it joins) and a solid one, by 4 variants by 3 kinds (street, boulevard, avenue). */
 function paintRoads(_cobble) {
   const [atlas, ctx] = surface(STRIDE * ROAD_COLS, STRIDE * ROAD_ROWS);
   // The corner of a tile where its neighbors on both sides are roads is the solid one's (see `build`), so the shapes need no more than the 8 by 8 that leaves.
   const m = 8, r = 12, out = 16;
   const rnd = seeded(77);
-  for (let type = 0; type < 2; type++) {
+  for (let type = 0; type < 3; type++) {
     for (let variant = 0; variant < 4; variant++) {
       for (let mask = 0; mask < ROAD_COLS; mask++) {
         const solid = mask === SOLID;
@@ -102,13 +106,26 @@ function paintRoads(_cobble) {
         ctx.beginPath(); ctx.rect(ox, oy, CELL, CELL); ctx.clip();
         path();
         ctx.clip();
-        // Asphalt, a little speckled; a street has a dashed yellow line down the middle, a boulevard a double one and a median.
+        // Asphalt, a little speckled; a street has a dashed yellow line down the middle, a boulevard a median, an avenue a double yellow line between its halves and a dashed white one between the lanes of each.
         const open = solid ? 0 : mask;
-        ctx.fillStyle = type === 0 ? '#4a4b4f' : '#3e3f44'; ctx.fillRect(ox, oy, CELL, CELL);
+        ctx.fillStyle = type === 1 ? '#3e3f44' : '#4a4b4f'; ctx.fillRect(ox, oy, CELL, CELL);
         for (let k = 0; k < 160; k++) { ctx.fillStyle = rnd() < 0.5 ? 'rgba(20,20,22,0.3)' : 'rgba(150,150,150,0.18)'; ctx.fillRect(ox + rnd() * CELL, oy + rnd() * CELL, 1 + rnd() * 2, 1 + rnd()); }
         const line = (x0, y0, x1, y1) => { ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); };
         const straight = open === 5 || open === 10;
-        if (straight || (open && (open & (open - 1)) === 0)) {
+        if (type === 2) {
+          const half = AVENUE_HALF[open];
+          if (half) {
+            // Along x if the other half is north or south of it; `at` is across the run, from the curb side to the other half.
+            const along = half === 1 || half === 4;
+            const toward = half === 2 || half === 4;
+            const run = (at) => { const a = toward ? at : CELL - at; if (along) line(ox, oy + a, ox + CELL, oy + a); else line(ox + a, oy, ox + a, oy + CELL); };
+            ctx.lineWidth = 2; ctx.strokeStyle = '#e8c440';
+            run(CELL - 2.5);
+            ctx.strokeStyle = 'rgba(236,236,230,0.85)'; ctx.setLineDash([9, 8]);
+            run((m + CELL) / 2);
+            ctx.setLineDash([]);
+          }
+        } else if (straight || (open && (open & (open - 1)) === 0)) {
           const v = open & 5;
           ctx.lineWidth = type === 0 ? 2 : 6;
           ctx.strokeStyle = type === 0 ? '#e8c440' : '#6a9a4a';
@@ -302,10 +319,10 @@ export function createDecals(GFX, world, materials, scene) {
       for (let x = cx * CHUNK; x < (cx + 1) * CHUNK; x++) {
         const t = idx(x, y);
         const r = world.road[t];
-        if (r === ROAD.DIRT || r === ROAD.COBBLE) {
+        if (r === ROAD.DIRT || r === ROAD.COBBLE || r === ROAD.AVENUE) {
           const mask = (roadAt(x, y - 1) ? 1 : 0) | (roadAt(x + 1, y) ? 2 : 0) | (roadAt(x, y + 1) ? 4 : 0) | (roadAt(x - 1, y) ? 8 : 0);
           const variant = Math.floor(((x * 73856093) ^ (y * 19349663)) >>> 0) % 4;
-          const row = (r === ROAD.COBBLE ? 4 : 0) + variant;
+          const row = ROAD_ROW[r] + variant;
           tileQuads(roads, x, y, cellUV(mask, row, ROAD_COLS, ROAD_ROWS));
           // Where the road goes on both ways and on the diagonal too, the tile's corner is road: the shape has a notch there that a road two tiles wide would show as a hole at every crossing of the tiles.
           for (const [corner, a, b, dx, dy] of CORNERS) {

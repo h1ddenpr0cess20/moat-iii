@@ -37,8 +37,24 @@ export function rectTiles(x0, y0, x1, y1) {
 
 // ---------------------------------------------------------------- roads
 
+/** What each kind of road is on the map. */
+const ROAD_OF = { dirt: ROAD.DIRT, cobble: ROAD.COBBLE, avenue: ROAD.AVENUE };
+
+/** An avenue is two tiles wide: each tile of the line and the ones beside it, east and south. */
+export function widen(tiles) {
+  const seen = new Set(), out = [];
+  for (const [x, y] of tiles) {
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      const k = `${x + dx},${y + dy}`;
+      if (!seen.has(k)) { seen.add(k); out.push([x + dx, y + dy]); }
+    }
+  }
+  return out;
+}
+
 export function planRoad(game, tiles, type = 'dirt') {
   if (type === 'bridge') return planBridge(game, tiles);
+  if (type === 'avenue') tiles = widen(tiles);
   const { world } = game;
   const cost = {};
   const ok = [], bad = [];
@@ -46,8 +62,9 @@ export function planRoad(game, tiles, type = 'dirt') {
   for (const [x, y] of tiles) {
     const reason = roadBlocked(world, x, y);
     const here = inb(x, y) ? world.road[idx(x, y)] : 0;
-    const want = type === 'cobble' ? ROAD.COBBLE : ROAD.DIRT;
-    if (reason === 'A bridge' || (here === want) || (here === ROAD.COBBLE && want === ROAD.DIRT) || here === ROAD.SPAN) continue;
+    const want = ROAD_OF[type];
+    // A street may be made something better; anything else already laid stays.
+    if (reason === 'A bridge' || (here && (here !== ROAD.DIRT || want === ROAD.DIRT))) continue;
     if (reason) { bad.push([x, y]); why ??= reason === 'Waterlogged' ? 'Too wet for a road: lay a bridge over it' : reason === 'Water' ? 'Water: lay a bridge over it' : reason; continue; }
     ok.push([x, y]);
     addCost(cost, ROADS[type].cost);
@@ -120,7 +137,7 @@ export function buildRoad(game, tiles, type = 'dirt', { free = false } = {}) {
       game.world.netVersion = (game.world.netVersion ?? 0) + 1;
       spans++;
     } else {
-      timber = setRoad(game.world, x, y, type === 'cobble' ? ROAD.COBBLE : ROAD.DIRT);
+      timber = setRoad(game.world, x, y, ROAD_OF[type]);
       if (timber < 0) continue;
     }
     if (!free) payAll(game, c);

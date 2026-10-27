@@ -100,6 +100,7 @@ export const RANKS = Object.freeze([
 /** Roads, and what they cost a tile. */
 export const ROADS = Object.freeze({
   dirt: { name: 'Street', cost: { gold: 1 }, desc: 'Two lanes of asphalt.' },
+  avenue: { name: 'Avenue', cost: { gold: 2 }, desc: 'Four lanes, two tiles wide, with a double yellow line down the middle. Drag along the ground: it is laid on the tiles you drag over and the row beside them.' },
   bridge: { name: 'Canal Bridge', cost: { gold: 6 }, desc: 'A bridge over a canal or a lagoon: drag from one bank to the other, up to six tiles of water, in a straight line. The grand canal is crossed only at its bridges.' },
   cobble: { name: 'Boulevard', cost: { gold: 3 }, desc: 'Palms down the median. Land along it is worth more.' },
 });

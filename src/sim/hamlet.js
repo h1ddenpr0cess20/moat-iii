@@ -85,12 +85,11 @@ export function seedHamlet(game) {
   // The founder bought the district south of the tower with the island: its canals are dug, and the avenue runs on into it.
   completeAnnex(game, world.wards[wardId(HOME_WARD, HOME_WARD + 1)]);
   game.log.length = 0;
-  buildRoad(game, rectTiles(C - 1, C + 6, C, C + 11), 'dirt', free);
+  buildRoad(game, rectTiles(C - 1, C + 6, C - 1, C + 42), 'avenue', free);
   buildRoad(game, rectTiles(C - 11, C + 8, C + 10, C + 8), 'dirt', free);
-  // On south into the new district, as a boulevard, with a cross street halfway down it.
-  buildRoad(game, rectTiles(C - 1, C + 12, C, C + 43), 'cobble', free);
+  // On south into the new district, with a cross street halfway down it.
   buildRoad(game, rectTiles(C - 11, C + 28, C + 10, C + 28), 'dirt', free);
-  // Homes on one side of the boulevard, shops and a little industry on the other, clearing the trees where it must.
+  // Homes on one side of the avenue, shops and a little industry on the other, clearing the trees where it must.
   const zones = [[C - 11, C + 9, C - 2, C + 11, 'res'], [C - 11, C + 6, C - 2, C + 7, 'res'], [C + 1, C + 6, C + 10, C + 7, 'com'], [C + 1, C + 9, C + 10, C + 11, 'ind']];
   for (const [x0, y0, x1, y1, zone] of zones) buildZone(game, rectTiles(x0, y0, x1, y1), zone, free);
   for (const [type, sx] of [['police', C - 14], ['firehouse', C + 13]]) {

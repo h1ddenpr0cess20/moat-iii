@@ -100,3 +100,19 @@ test('houses grow in the ring and never in the core', () => {
   for (let ty = y + 6; ty < y + 8; ty++) for (let tx = x + 6; tx < x + 8; tx++) assert.equal(game.world.bld[idx(tx, ty)], 0, 'the core is clear');
   assert.ok(block.homes >= 8);
 });
+
+test('a service building in the heart of a joined-up block is reached by its streets', () => {
+  const { game, x, y, N } = freeGround();
+  buildBlock(game, x, y, x + N - 1, y + N - 1, { ring: 'res', core: 'none' }, { free: true });
+  fillRing(game, x, y, N);
+  let school = null;
+  for (const [a, b] of [[5, 5], [4, 4], [6, 6], [5, 4]]) { school = placeBuilding(game, 'school', x + a, y + b, 0, { free: true }).building; if (school) break; }
+  assert.ok(school, 'the school fits');
+  finish(game);
+  step(game);
+  assert.equal(school.connected, false, 'not while the block is cut off from the city');
+  connect(game, { x, y, w: N, d: N });
+  step(game);
+  assert.equal(school.connected, true, 'no street of its own, and none needed');
+  assert.ok(school.eff > 0, 'people work there');
+});

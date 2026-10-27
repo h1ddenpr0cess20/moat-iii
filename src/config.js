@@ -72,4 +72,4 @@ export const DIRS = Object.freeze([[0, -1], [1, 0], [0, 1], [-1, 0]]);
 export const GROUND = Object.freeze({ GRASS: 0, ROCK: 1, ORE: 2, WATER: 3, CLIFF: 4, SAND: 5 });
 
 /** What can lie on a tile besides the ground. */
-export const ROAD = Object.freeze({ NONE: 0, DIRT: 1, COBBLE: 2, BRIDGE: 3, SPAN: 4 });
+export const ROAD = Object.freeze({ NONE: 0, DIRT: 1, COBBLE: 2, BRIDGE: 3, SPAN: 4, AVENUE: 5 });

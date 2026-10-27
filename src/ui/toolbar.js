@@ -104,7 +104,7 @@ export function createToolbar(ctx) {
       }
       if (ctx.tools.pendingTouch) actions.push(h('button.btn.gold', { onclick: () => tools.commit() }, 'Place it here'));
     } else if (t === 'demolish') {
-      put(h('div.hint', { html: 'Click a building, road, zone, tree or outcrop to clear it. Drag to clear many (buildings are only cleared by a click). Buildings give back a little of what they cost.' }));
+      put(h('div.hint', { html: 'Click a building, road, zone or tree to clear it. Drag to clear many (buildings are only cleared by a click). Buildings give back a little of what they cost.' }));
     }
     put(h('div.row.actions-row', {},
       touch() ? h('span.hint', {}, 'Two fingers slide, pinch and turn the map.') : null,
