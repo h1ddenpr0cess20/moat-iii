@@ -94,7 +94,7 @@ export function createAtmosphere({ GFX, stage, sunDir, materials, terrain, water
         terrain.setSeason(season, k, snow);
         for (const name of ['thatch', 'tile', 'slate']) mat[name].emissive.setRGB(0.12 * snow * L.day, 0.13 * snow * L.day, 0.15 * snow * L.day);
       }
-      water.update(dt, { night: L.night, dusk: L.dusk, overcast, storm, height: stage.camera.position.y });
+      water.update(dt, { shine: 0.5 + 0.9 * L.day * (1 - 0.5 * overcast), storm });
       fx.tint(L.night);
       const key = `${season}:${Math.round(L.night * 4)}:${Math.round(overcast * 3)}`;
       if (key !== filmKey) {

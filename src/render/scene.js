@@ -16,7 +16,6 @@ import { createSkyDomes, paintDay, paintReflections } from './sky.js';
 import { createTerrain } from './terrain.js';
 import { createTrees } from './trees.js';
 import { createWater } from './water.js';
-import { createTraffic } from './traffic.js';
 import { useRenderer } from './dispose.js';
 
 /**
@@ -44,7 +43,6 @@ export async function createScene({ host, game, progress = () => {} }) {
   const decals = createDecals(GFX, world, materials, stage.scene);
   const buildings = createBuildings(GFX, world, materials, stage.scene);
   const gates = createGates(GFX, world, materials, stage.scene);
-  const traffic = createTraffic({ GFX, scene: stage.scene, game, world });
   const fx = createFx(GFX, stage.scene, world);
   const overlays = createOverlays(GFX, world, stage.scene);
   const camera = createCamera({ GFX, stage, world, viewDef, dom: stage.renderer.domElement });
@@ -89,7 +87,7 @@ export async function createScene({ host, game, progress = () => {} }) {
   let time = 0;
 
   const scene = {
-    GFX, stage, camera, viewDef, materials, terrain, water, trees, decals, buildings, gates, traffic, fx, overlays, atmosphere,
+    GFX, stage, camera, viewDef, materials, terrain, water, trees, decals, buildings, gates, fx, overlays, atmosphere,
     /** Where, in the sun's day, the game is: how far through the current week (0 to 1). */
     weekFrac: 0,
     /** The game stands still: the world's own motion stops. */
@@ -114,7 +112,6 @@ export async function createScene({ host, game, progress = () => {} }) {
       if (emitClock <= 0) { emitClock = 1.5; emitters = buildings.emitters(); }
       buildings.update(live, 0.6 + 0.4 * Math.sin(time * 0.3));
       gates.update(dt);
-      traffic.update(dt, { live });
       overlays.update(dt);
       const frac = Math.min(1, scene.weekFrac);
       atmosphere.update(live, { week: game.week, frac, storm: Boolean(game.hurricane && !game.hurricane.warn) });
