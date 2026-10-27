@@ -67,7 +67,11 @@ export function createUI({ game, scene, root, clock, sfx = () => {}, extra = {} 
   const labels = createLabels(ctx);
   root.append(labels.el, hud.el, toasts.el, ctx.steward.el, ctx.inspector.el, minimap.el, toolbar.options, toolbar.dock);
 
-  game.on('note', ({ text, kind, at }) => { if (kind !== 'quiet') toasts.show(text, kind, at); });
+  game.on('note', ({ text, kind, at }) => {
+    toasts.show(text, kind, at);
+    // The news, if it is open, has the note at once rather than when the week turns.
+    if (ctx.dialogs.current === 'chronicle') ctx.dialogs.refresh();
+  });
   game.on('week', () => { ctx.dialogs.refresh(); ctx.steward.watch(); });
 
   addEventListener('keydown', (e) => {

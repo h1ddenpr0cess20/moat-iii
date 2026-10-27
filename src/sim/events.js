@@ -42,19 +42,22 @@ function wreck(game, b, why) {
   return at;
 }
 
-export function burn(game, b, depth = 0) {
+/** Burns a building, and maybe the one next door. `kind` is how loudly the news tells it: quietly when an earthquake has its own note. Returns how many burned. */
+export function burn(game, b, depth = 0, kind = 'bad') {
   const { world } = game;
-  if (!world.buildings.has(b.id) || b.type === 'castle') return;
+  if (!world.buildings.has(b.id) || b.type === 'castle') return 0;
   const at = wreck(game, b, 'fire');
-  game.note(`The ${BUILDINGS[b.type].name.toLowerCase()} burned down.`, 'bad', at);
+  game.note(`The ${BUILDINGS[b.type].name.toLowerCase()} burned down.`, kind, at);
+  let n = 1;
   // A fire may take the roof next door; the fire department seldom lets it go further.
   if (depth < 1) {
     for (const o of [...world.buildings.values()]) {
       if (o.type === 'castle' || !FLAMMABLE[o.type]) continue;
       const d = Math.hypot(o.x + o.w / 2 - at[0], o.y + o.d / 2 - at[1]);
-      if (d < 2.8 && game.rnd() < SPREAD * FLAMMABLE[o.type] * (1 - 0.9 * covered(game, 'fire', at[0], at[1])) * (1 - 0.5 * qualityAt(game, o.x + o.w / 2, o.y + o.d / 2))) burn(game, o, depth + 1);
+      if (d < 2.8 && game.rnd() < SPREAD * FLAMMABLE[o.type] * (1 - 0.9 * covered(game, 'fire', at[0], at[1])) * (1 - 0.5 * qualityAt(game, o.x + o.w / 2, o.y + o.d / 2))) n += burn(game, o, depth + 1, kind);
     }
   }
+  return n;
 }
 
 export function fires(game) {
@@ -81,10 +84,11 @@ export function quakes(game) {
   for (const b of list) {
     const d = Math.hypot(b.x + b.w / 2 - ex, b.y + b.d / 2 - ey);
     // Old, low buildings are the ones that come down; towers are built for it.
+    // A fire from an earlier fall may already have taken it.
+    if (!world.buildings.has(b.id)) continue;
     if (d < 8 && game.rnd() < 0.18 * (1 - d / 8) * (b.level === 3 ? 0.2 : 1)) {
-      if (FLAMMABLE[b.type] && game.rnd() < 0.3 * (1 - covered(game, 'fire', ex, ey))) burn(game, b);
-      else wreck(game, b, 'quake');
-      down++;
+      if (FLAMMABLE[b.type] && game.rnd() < 0.3 * (1 - covered(game, 'fire', ex, ey))) down += burn(game, b, 0, 'quiet');
+      else { wreck(game, b, 'quake'); down++; }
     }
   }
   game.shock += 8;
@@ -120,7 +124,7 @@ export function hurricanes(game) {
       if (game.rnd() < 0.03 * low * shelter * (0.3 + 2 * Math.min(1, shore)) * (DIFFICULTY[game.difficulty] ?? 1)) { wreck(game, b, 'storm'); down++; }
     }
     game.shock += 1.5;
-    if (down) game.note(`The hurricane wrecked ${down} building${down > 1 ? 's' : ''} this week.`, 'bad');
+    if (down) game.note(`The hurricane wrecked ${down} building${down > 1 ? 's' : ''} this week.`, 'bad', h.at);
     if (--h.weeks <= 0) {
       game.hurricane = null;
       game.note('The hurricane has blown itself out.', 'good');
