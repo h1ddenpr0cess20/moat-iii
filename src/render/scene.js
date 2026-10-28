@@ -114,7 +114,7 @@ export async function createScene({ host, game, progress = () => {} }) {
       if (emitClock <= 0) { emitClock = 1.5; emitters = buildings.emitters(); }
       buildings.update(live, 0.6 + 0.4 * Math.sin(time * 0.3));
       gates.update(dt);
-      traffic.update(dt, { live });
+      traffic.update(dt, { live, eye: camera.eye });
       overlays.update(dt);
       const frac = Math.min(1, scene.weekFrac);
       atmosphere.update(live, { week: game.week, frac, storm: Boolean(game.hurricane && !game.hurricane.warn) });

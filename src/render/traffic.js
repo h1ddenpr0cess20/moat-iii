@@ -1,7 +1,7 @@
 import { bake, createStatic } from 'madness-engine/models/model';
 import { createBakeLibrary } from 'madness-engine/models/bake';
 import { Batch, Mesher } from 'madness-engine/mesher';
-import { boxtruck, hatchback, pickup, sedan } from 'madness-engine/scenery/vehicles';
+import { boxtruck, hatchback, mountWheels, pickup, sedan, truckwheel, wheel } from 'madness-engine/scenery/vehicles';
 import { DIRS } from '../config.js';
 import { hash2, mulberry32 } from '../rng.js';
 import { heightAt } from '../world/world.js';
@@ -14,9 +14,15 @@ import { freeTree } from './dispose.js';
  * in `world/traffic.js`. A car is sized to its lane: a sedan is a little under
  * half a tile long and a quarter of one wide. The crossings get their lights
  * and their stop signs. Lamps light at night by themselves.
+ *
+ * Close up (the camera drawn in, the car near what it looks at) a car is
+ * its body with its wheels on, finer, and they roll and steer; otherwise
+ * it is the whole car, wheels and all, still, which is all that shows.
  */
 
 const DETAIL = 0.45;
+/** How finely the cars close up are baked; how near the camera must be for any (tiles); how many at once. */
+const NEAR_DETAIL = 0.8, NEAR_CAMERA = 9, NEAR_MOST = 24;
 /** Each kind and its length in tiles, and how common it is. */
 const KINDS = [
   { def: sedan, size: 0.46, weight: 4 },
@@ -27,8 +33,10 @@ const KINDS = [
 const PAINT = ['#e8e8e8', '#1a1a1e', '#b02a2a', '#2a4a8a', '#8a8e94', '#e8c440', '#3a7a5a', '#d87a3a', '#f0f0f0', '#5a2a4a'];
 const LIGHTS = { red: '#ff3a2a', amber: '#ffb020', green: '#3aff7a' };
 
-/** The definitions by name, for the bake worker. */
-export const SCULPTED = Object.fromEntries(KINDS.map((k) => [k.def.name, k.def]));
+/** The definitions by name, for the bake worker: the cars, their bodies, their wheels. */
+export const SCULPTED = Object.fromEntries([...KINDS.flatMap((k) => [k.def, k.def.body]), wheel, truckwheel].map((d) => [d.name, d]));
+/** What the close-up cars are baked from. */
+const NEAR_JOBS = [...KINDS.map((k) => k.def.body.name), ...new Set(KINDS.map((k) => k.def.wheel))].map((n) => [n, NEAR_DETAIL]);
 
 /** A stop sign on its post: a red octagon, facing the way the cars come. */
 function stopSign(m) {
@@ -50,11 +58,11 @@ export function createTraffic({ GFX, scene, game, world, materials }) {
   const library = createBakeLibrary({
     sculpted: SCULPTED,
     spawn: () => new Worker(new URL('./traffic.worker.js', import.meta.url), { type: 'module' }),
-    jobs: () => KINDS.map((k) => [k.def.name, DETAIL]),
+    jobs: () => [...KINDS.map((k) => [k.def.name, DETAIL]), ...NEAR_JOBS],
     label: 'moat-iii traffic',
   });
   library.preload();
-  const baked = (def) => typeof Worker !== 'undefined' && library.isBaked(def.name, DETAIL);
+  const baked = (def, detail = DETAIL) => typeof Worker !== 'undefined' && library.isBaked(def.name, detail);
   const sim = createTrafficSim(world, { kinds: KINDS.map((k) => [k.size, k.weight]), rnd: mulberry32(world.seed ^ 0x5eed) });
 
   /** How each kind is scaled so it is `size` tiles long, and where its wheels are. */
@@ -88,17 +96,42 @@ export function createTraffic({ GFX, scene, game, world, materials }) {
 
   /** The meshes, by car id. A car not yet baked waits, unseen. */
   const meshes = new Map();
+  const colorOf = (car) => PAINT[Math.floor(hash2(car.id, 5, 11) * PAINT.length)];
   const meshFor = (car) => {
     if (meshes.has(car.id)) return meshes.get(car.id);
     const kind = KINDS[car.kind];
     if (!baked(kind.def)) return null;
     const mesh = createStatic(GFX, kind.def, { detail: DETAIL });
-    mesh.material = paintOf(mesh, kind.def, PAINT[Math.floor(hash2(car.id, 5, 11) * PAINT.length)]);
+    mesh.material = paintOf(mesh, kind.def, colorOf(car));
     mesh.scale.setScalar(fitOf(kind).k);
     group.add(mesh);
-    const out = { mesh, fit: fitOf(kind) };
+    const out = { mesh, fit: fitOf(kind), close: null, last: null };
     meshes.set(car.id, out);
     return out;
+  };
+  /** A car close up: its body, finer, with its wheels on, made the first time it is wanted (once baked). */
+  const wheelMeshes = new Map();
+  const closeFor = (car, m) => {
+    if (m.close) return m.close;
+    const { def } = KINDS[car.kind];
+    if (!baked(def.body, NEAR_DETAIL) || !baked(SCULPTED[def.wheel], NEAR_DETAIL)) return null;
+    const mesh = createStatic(GFX, def.body, { detail: NEAR_DETAIL });
+    mesh.material = paintOf(mesh, def.body, colorOf(car));
+    mesh.scale.setScalar(m.fit.k);
+    if (!wheelMeshes.has(def.wheel)) {
+      const w = createStatic(GFX, SCULPTED[def.wheel], { detail: NEAR_DETAIL });
+      wheelMeshes.set(def.wheel, { geometry: w.geometry, material: w.material });
+    }
+    const wheels = mountWheels(GFX, def, wheelMeshes.get(def.wheel));
+    mesh.add(wheels.group);
+    group.add(mesh);
+    m.close = { mesh, wheels };
+    return m.close;
+  };
+  const dropClose = (m) => {
+    if (!m.close) return;
+    group.remove(m.close.mesh);
+    m.close = null;
   };
 
   // ------------------------------------------------------------ the crossings' furniture
@@ -169,21 +202,39 @@ export function createTraffic({ GFX, scene, game, world, materials }) {
   return {
     group,
     sim,
-    /** Once a frame: `live` is the frame's time, 0 while paused. */
-    update(dt, { live = dt } = {}) {
+    /** Once a frame: `live` is the frame's time, 0 while paused; `eye` where the camera looks and how far off it is ({ x, z, distance }). */
+    update(dt, { live = dt, eye = null } = {}) {
       if (live > 0) sim.step(live, want());
       else if (!sim.net) sim.step(0, 0);
       if (sim.net !== furnished) furnish(sim.net);
       for (const l of lamps) l.lamp.material = lampMats[signalFor(l.cluster, l.d, sim.time)];
       const alive = new Set();
+      // The cars to draw close up: the nearest few to where the camera looks, when it is drawn in.
+      const close = new Set();
+      if (eye && eye.distance < NEAR_CAMERA) {
+        const reach = eye.distance * 1.4;
+        const by = sim.cars.map((car) => [Math.hypot(car.x - eye.x, car.z - eye.z), car]).filter(([d]) => d < reach);
+        by.sort((a, b) => a[0] - b[0]);
+        for (const [, car] of by.slice(0, NEAR_MOST)) close.add(car.id);
+      }
       for (const car of sim.cars) {
         alive.add(car.id);
         const m = meshFor(car);
         if (!m) continue;
-        m.mesh.position.set(car.x, car.y - m.fit.foot + 0.012, car.z);
-        m.mesh.rotation.y = Math.atan2(car.hx, car.hz);
+        const yaw = Math.atan2(car.hx, car.hz);
+        const c = close.has(car.id) ? closeFor(car, m) : (dropClose(m), null);
+        m.mesh.visible = !c;
+        const shown = c ? c.mesh : m.mesh;
+        shown.position.set(car.x, car.y - m.fit.foot + 0.012, car.z);
+        shown.rotation.y = yaw;
+        if (c && m.last) {
+          // Its wheels round by how far it went (in the model's own units), steered by how far it turned.
+          const [x, z, was] = m.last;
+          c.wheels.drive(Math.hypot(car.x - x, car.z - z) / m.fit.k, Math.atan2(Math.sin(yaw - was), Math.cos(yaw - was)));
+        }
+        m.last = [car.x, car.z, yaw];
       }
-      for (const [id, m] of meshes) if (!alive.has(id)) { group.remove(m.mesh); meshes.delete(id); }
+      for (const [id, m] of meshes) if (!alive.has(id)) { dropClose(m); group.remove(m.mesh); meshes.delete(id); }
     },
     count: () => sim.cars.length,
   };
