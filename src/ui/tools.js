@@ -412,7 +412,8 @@ export function createTools(ctx) {
     // A second finger down is a pinch or a twist of the view: whatever the first finger had begun to draw is let go,
     // so lifting the fingers after does not lay a road or a zone that was never meant.
     if (camera.gesturing) {
-      if (drag) { if (camera.grabbing) camera.endGrab(); drag = null; clearPreview(); refresh(); }
+      // The camera has already taken the two fingers' grab for itself: only the tool's own drag is let go.
+      if (drag) { drag = null; clearPreview(); refresh(); }
       return;
     }
     if (e.button !== 0) return;

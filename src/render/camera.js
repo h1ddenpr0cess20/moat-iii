@@ -140,6 +140,11 @@ export function createCamera({ GFX, stage, world, viewDef, dom }) {
         view.yaw = view.aim.yaw;
         view.zoom = view.aim.zoom;
         if (grab) { grab.px = t.cx; grab.py = t.cy; }
+        else {
+          // The fingers began over no land (or the grab was let go): take hold as soon as they are over some.
+          const p = pick(t.cx, t.cy);
+          if (p) grab = { x0: p.x, z0: p.z, dx: 0, dz: 0, px: t.cx, py: t.cy };
+        }
       }
       return;
     }

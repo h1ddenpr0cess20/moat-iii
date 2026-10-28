@@ -27,7 +27,7 @@ import { useRenderer } from './dispose.js';
 
 export async function createScene({ host, game, progress = () => {} }) {
   const { world } = game;
-  const viewDef = defineView({ home: { yaw: 0.3, pitch: 0.95, zoom: 2.4 }, limits: { pitch: [0.3, 1.5], zoom: [0.22, 48] } });
+  const viewDef = defineView({ home: { yaw: 0.3, pitch: 0.95, zoom: 2.4 }, limits: { pitch: [0.08, 1.5], zoom: [0.22, 48] } });
   const sunDir = new GFX.Vector3(-0.3, 1, 0.6).normalize();
   const day = paintDay();
   const stage = await createStage(host, {
