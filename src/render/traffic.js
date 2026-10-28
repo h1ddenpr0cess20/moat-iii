@@ -6,6 +6,7 @@ import { DIRS } from '../config.js';
 import { hash2, mulberry32 } from '../rng.js';
 import { heightAt } from '../world/world.js';
 import { createTrafficSim, signalFor } from '../world/traffic.js';
+import { LIFT } from './decals.js';
 import { freeTree } from './dispose.js';
 
 /**
@@ -225,7 +226,8 @@ export function createTraffic({ GFX, scene, game, world, materials }) {
         const c = close.has(car.id) ? closeFor(car, m) : (dropClose(m), null);
         m.mesh.visible = !c;
         const shown = c ? c.mesh : m.mesh;
-        shown.position.set(car.x, car.y - m.fit.foot + 0.012, car.z);
+        // On the road's surface, which is drawn a little above the ground.
+        shown.position.set(car.x, car.y + LIFT - m.fit.foot + 0.002, car.z);
         shown.rotation.y = yaw;
         if (c && m.last) {
           // Its wheels round by how far it went (in the model's own units), steered by how far it turned.
