@@ -5,9 +5,12 @@ import { mulberry32 } from '../src/rng.js';
 import { startGame, step } from '../src/sim/game.js';
 import { createTrafficSim, signalFor, wrongWay } from '../src/world/traffic.js';
 import { idx } from '../src/world/world.js';
+import { CASTLE_BRIDGE } from '../src/world/wards.js';
 import { createBot } from './bot.js';
 
 const KINDS = [[0.46, 4], [0.4, 3], [0.52, 2], [0.66, 1]];
+const CASTLE = new Set();
+for (let y = CASTLE_BRIDGE.y; y < CASTLE_BRIDGE.y + CASTLE_BRIDGE.d; y++) for (let x = CASTLE_BRIDGE.x; x < CASTLE_BRIDGE.x + CASTLE_BRIDGE.w; x++) CASTLE.add(idx(x, y));
 
 /** A city grown by the bot for two years, and its traffic run for `seconds`, watched every `every` frames. */
 function drive(seed, cars, seconds, watch) {
@@ -82,4 +85,25 @@ test('the lights give each way in a green, an amber and a red', () => {
   }
   // Never two ways green at once.
   for (let t = 0; t < 30; t += 0.1) assert.ok([0, 1, 2, 3].filter((d) => signalFor(c, d, t) !== 'red').length <= 1);
+});
+
+test('a car goes on and off a bridge without a step, and never up the drawbridge to the tower', () => {
+  let ends = 0, worst = 0;
+  const sim = drive('c3', 30, 20, (sim) => {
+    for (const c of sim.cars) assert.ok(!CASTLE.has(idx(c.cur[0], c.cur[1])), `car ${c.id} on the drawbridge`);
+  });
+  const net = sim.net, size = net.size;
+  for (const t of net.tiles) {
+    if (net.rampOf[t] < 0) continue;
+    const x = t % size, y = Math.floor(t / size);
+    for (const [dx, dy] of DIRS) {
+      if (!net.road(x + dx, y + dy) || net.rampOf[idx(x + dx, y + dy)] >= 0) continue;
+      // Where the bridge meets the road: the deck's height there and the road's.
+      const ex = x + 0.5 + dx * 0.5, ez = y + 0.5 + dy * 0.5;
+      worst = Math.max(worst, Math.abs(net.groundAt(t, ex, ez) - net.groundAt(idx(x + dx, y + dy), ex, ez)));
+      ends++;
+    }
+  }
+  assert.ok(ends > 0, 'there are bridges');
+  assert.ok(worst < 0.02, `a step of ${worst.toFixed(3)} at a bridge's end`);
 });
