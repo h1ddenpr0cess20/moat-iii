@@ -15,7 +15,8 @@ import { freeGeometry } from './dispose.js';
  */
 
 const CELL = 64;
-const LIFT = 0.03;
+/** How far above the ground the roads and the lots are drawn: what drives on a road, and a bridge's deck, sit on it. */
+export const LIFT = 0.03;
 /**
  * The atlases leave a margin around every cell. The smaller mip levels a far-off tile is drawn from blend each
  * texel with its neighbors, and with no margin the neighbor is the next cell, so a road bends toward a shape

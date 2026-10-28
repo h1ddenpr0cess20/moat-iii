@@ -1,6 +1,8 @@
 import { CASTLE_BRIDGE } from '../world/wards.js';
-import { heightAt } from '../world/world.js';
+import { deckAt, rampOver } from '../world/bridges.js';
+import { idx, inb } from '../world/world.js';
 import { CENTER, ROAD } from '../config.js';
+import { LIFT } from './decals.js';
 import { Batch, Mesher } from 'madness-engine/mesher';
 import { castsShadow } from './materials.js';
 import { freeTree } from './dispose.js';
@@ -9,7 +11,8 @@ import { freeTree } from './dispose.js';
  * The bridges over the canals: concrete, as in Venice Beach. An asphalt deck
  * with a yellow line and a sidewalk each side, low parapet walls, round piers
  * into the water, and a streetlight at each end. The tower has a bridge of
- * its own to its plaza.
+ * its own to its plaza. Each deck runs straight from bank to bank, on the
+ * same ramp the cars drive (`world/bridges.js`), meeting the road at both ends.
  */
 
 const CONCRETE = '#c9c6be', CURB = '#dedbd2', ASPHALT = '#4a4b4f';
@@ -88,13 +91,15 @@ export function createGates(GFX, world, materials, scene) {
     }
   };
 
-  /** One bridge from a world point (the inner end) outward along (dx, dz). */
-  const bridge = (sx, sz, dx, dz, len, { leaf = null, hinge = 0, width = 2 } = {}) => {
+  /** One bridge from a world point (the inner end) outward along (dx, dz), on `ramp`: tilted to rise or fall with it. */
+  const bridge = (sx, sz, dx, dz, len, ramp, { leaf = null, hinge = 0, width = 2 } = {}) => {
     const ex = sx + dx * len, ez = sz + dz * len;
-    const y = (heightAt(world, sx, sz) + heightAt(world, ex, ez)) / 2 + 0.07;
+    const y = deckAt(ramp, sx, sz, { extend: true }) + LIFT, y1 = deckAt(ramp, ex, ez, { extend: true }) + LIFT;
     const root = new GFX.Group();
     root.position.set(sx, y, sz);
     root.rotation.y = yawOut(dx, dz);
+    // Tilted about its own z after the turn: its +x, the way out, rises by y1 − y over its length.
+    root.rotation.z = Math.atan2(y1 - y, len);
     const fixed = new GFX.Group();
     meshes(fixedBridge(len, leaf, 0, 1.6, width), fixed);
     root.add(fixed);
@@ -124,7 +129,8 @@ export function createGates(GFX, world, materials, scene) {
       const house = g.gatehouse && world.buildings.get(g.gatehouse);
       const hasHouse = house && house.state === 'ready';
       const leaf = hasHouse ? [2, 5] : null;
-      const it = bridge(inner[0], inner[1], out[0], out[1], 6, { leaf, hinge: 2 });
+      const ramp = rampOver(world, g.tiles.filter(([x, y]) => inb(x, y)).map(([x, y]) => idx(x, y)));
+      const it = bridge(inner[0], inner[1], out[0], out[1], 6, ramp, { leaf, hinge: 2 });
       it.gate = g;
       it.angle = hasHouse && !g.open ? 1.4 : 0;
       if (it.pivot) it.pivot.rotation.z = it.angle;
@@ -138,14 +144,19 @@ export function createGates(GFX, world, materials, scene) {
         if (!span(x, y) || seen.has(y * world.size + x)) continue;
         const horizontal = span(x + 1, y) || !span(x, y + 1);
         let n = 0;
-        while (horizontal ? span(x + n, y) : span(x, y + n)) { seen.add((horizontal ? y : y + n) * world.size + (horizontal ? x + n : x)); n++; }
-        const it = horizontal ? bridge(x - 1, y + 0.5, 1, 0, n + 2, { width: 1.05 }) : bridge(x + 0.5, y - 1, 0, 1, n + 2, { width: 1.05 });
+        const run = [];
+        while (horizontal ? span(x + n, y) : span(x, y + n)) { run.push((horizontal ? y : y + n) * world.size + (horizontal ? x + n : x)); n++; }
+        for (const t of run) seen.add(t);
+        const ramp = rampOver(world, run);
+        const it = horizontal ? bridge(x - 1, y + 0.5, 1, 0, n + 2, ramp, { width: 1.05 }) : bridge(x + 0.5, y - 1, 0, 1, n + 2, ramp, { width: 1.05 });
         items.push(it);
       }
     }
-    // The castle's own, from the courtyard gate to the far bank, always down.
+    // The castle's own, from the courtyard gate to the road beyond the moat, always down: from the courtyard's height to the road's.
     const cb = CASTLE_BRIDGE;
-    const it = bridge(CENTER, cb.y - 0.1, 0, 1, 2.8, { leaf: [0.6, 2.4], hinge: 0.6 });
+    const tiles = [];
+    for (let y = cb.y; y < cb.y + cb.d; y++) for (let x = cb.x; x < cb.x + cb.w; x++) tiles.push(idx(x, y));
+    const it = bridge(CENTER, cb.y, 0, 1, cb.d, rampOver(world, tiles), { leaf: [0.6, 2.4], hinge: 0.6 });
     it.castle = true;
     items.push(it);
   };

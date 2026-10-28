@@ -1,6 +1,8 @@
 import { DIRS, ROAD, WATER_LEVEL } from '../config.js';
 import { hash2 } from '../rng.js';
 import { heightAt, idx, inb } from './world.js';
+import { deckAt, rampOver } from './bridges.js';
+import { CASTLE_BRIDGE } from './wards.js';
 
 /**
  * The traffic, as rules and no drawing: where the lanes run, who may go, and
@@ -41,6 +43,9 @@ export function survey(world) {
     const r = world.road[i];
     drive[i] = r === ROAD.AVENUE || r === ROAD.BRIDGE ? 2 : r === ROAD.DIRT || r === ROAD.COBBLE || r === ROAD.SPAN ? 1 : 0;
   }
+  // Nobody drives up the castle's drawbridge: it goes only to the tower, and there is nowhere to turn at the top.
+  const cb = CASTLE_BRIDGE;
+  for (let y = cb.y; y < cb.y + cb.d; y++) for (let x = cb.x; x < cb.x + cb.w; x++) if (inb(x, y)) drive[idx(x, y)] = 0;
   const road = (x, y) => inb(x, y) && drive[idx(x, y)] > 0;
   const wide = (x, y) => inb(x, y) && drive[idx(x, y)] === 2;
 
@@ -78,31 +83,29 @@ export function survey(world) {
     clusters.push(c);
   }
 
-  // The bridges' decks are flat, at the height of their banks.
-  const deck = new Float32Array(N * N).fill(NaN);
-  const seen = new Uint8Array(N * N);
+  // The bridges' decks run straight from bank to bank (`world/bridges.js`): which ramp each bridge tile is on.
+  const ramps = [];
+  const rampOf = new Int32Array(N * N).fill(-1);
   for (const t of tiles) {
     const r = world.road[t];
-    if (seen[t] || (r !== ROAD.BRIDGE && r !== ROAD.SPAN)) continue;
+    if (rampOf[t] >= 0 || (r !== ROAD.BRIDGE && r !== ROAD.SPAN)) continue;
     const part = [t], stack = [t];
-    seen[t] = 1;
-    let sum = 0, n = 0;
+    rampOf[t] = ramps.length;
     while (stack.length) {
       const i = stack.pop();
       const x = i % N, y = Math.floor(i / N);
       for (const [dx, dy] of DIRS) {
         if (!inb(x + dx, y + dy)) continue;
         const j = idx(x + dx, y + dy);
-        if (world.road[j] === r) { if (!seen[j]) { seen[j] = 1; part.push(j); stack.push(j); } continue; }
-        const h = heightAt(world, x + dx + 0.5, y + dy + 0.5);
-        if (h > WATER_LEVEL + 0.05) { sum += h; n++; }
+        if (world.road[j] === r && drive[j] && rampOf[j] < 0) { rampOf[j] = ramps.length; part.push(j); stack.push(j); }
       }
     }
-    const y = (n ? sum / n : WATER_LEVEL) + 0.07;
-    for (const i of part) deck[i] = y;
+    ramps.push(rampOver(world, part));
   }
+  /** How high the ground a car drives on is at (x, z), on tile `t`: the bridge's deck on a bridge. */
+  const groundAt = (t, x, z) => (rampOf[t] >= 0 ? deckAt(ramps[rampOf[t]], x, z) : Math.max(heightAt(world, x, z), WATER_LEVEL));
 
-  return Object.assign(net, { junction, clusters, deck, tiles });
+  return Object.assign(net, { junction, clusters, ramps, rampOf, groundAt, tiles });
 }
 
 /** Would a car heading `d` onto (x, y) be going the wrong way? On an avenue, the right half is the one with the other half on its left. */
@@ -455,8 +458,7 @@ export function createTrafficSim(world, { kinds = [[0.46, 1]], rnd = Math.random
         if (!ok) { remove(i); continue; }
         place(car);
         const [tx, ty] = car.cur;
-        const deck = net.deck[idx(tx, ty)];
-        car.y = Number.isNaN(deck) ? Math.max(heightAt(world, car.x, car.z), WATER_LEVEL) : deck;
+        car.y = net.groundAt(idx(tx, ty), car.x, car.z);
       }
     },
   };
