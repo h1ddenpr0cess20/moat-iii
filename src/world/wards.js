@@ -136,6 +136,39 @@ export const CASTLE_BRIDGE = Object.freeze({ x: CENTER - 1, y: CENTER + 3, w: 2,
 /** Where the town's first road starts: the tiles just beyond the drawbridge. */
 export const CASTLE_ROOT = Object.freeze({ x: CENTER - 1, y: CENTER + 6, w: 2 });
 
+/** Is this tile dry, firm land a bridge can start or end on? Judged on the land as it was made, before any moat is cut. */
+function firmLand(world, x, y) {
+  if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return false;
+  const g = world.ground[idx(x, y)];
+  if (g === GROUND.WATER || g === GROUND.CLIFF) return false;
+  const vx = Math.min(HV - 1, Math.round((x + 0.5) * SUB)), vy = Math.min(HV - 1, Math.round((y + 0.5) * SUB));
+  return (world.hBase ?? world.h)[vy * HV + vx] > WATER_LEVEL + 0.25;
+}
+
+/**
+ * How far along its border a gate's bridge is slid from the middle, so that both its ends
+ * stand on land: the nearest place to the middle where both banks are dry ground and not
+ * a river, a lake, the sea or a cliff. Null if there is none: the border is all water, and
+ * a gate there would be a bridge to nowhere.
+ */
+function gateOffset(world, s, horizontal) {
+  const base = (horizontal ? s.x0 : s.y0) + WARD / 2;
+  const edge = horizontal ? s.y0 : s.x0;
+  const reach = Math.max(0, WARD / 2 - 3);
+  for (let n = 0; n <= reach * 2; n++) {
+    const off = n % 2 ? -(n + 1) / 2 : n / 2;
+    let ok = true;
+    for (const k of [-3, -2, 1, 2]) {
+      for (let a = -1; a < 1 && ok; a++) {
+        const along = base + off + a, across = edge + k;
+        if (!(horizontal ? firmLand(world, along, across) : firmLand(world, across, along))) ok = false;
+      }
+    }
+    if (ok) return off;
+  }
+  return null;
+}
+
 /**
  * Works out where the moat is from which wards are the realm's: the distance
  * to it from every vertex, which tiles are water, which are bank, and which
@@ -186,7 +219,11 @@ export function computeMoat(world) {
     if (s.beyond === null) continue;
     const key = `${s.ward}:${s.dir}`;
     const horizontal = s.dir === 0 || s.dir === 2;
-    const mid = (horizontal ? s.x0 : s.y0) + WARD / 2;
+    const prev = old.get(key);
+    let off = (prev && !prev.wet ? prev.off : undefined) ?? world.gateOffsets?.get(key) ?? gateOffset(world, s, horizontal);
+    const wet = off === null;
+    if (wet) off = 0;
+    const mid = (horizontal ? s.x0 : s.y0) + WARD / 2 + off;
     const tiles = [];
     // Six tiles long across the moat, two wide.
     for (let k = -3; k < 3; k++) {
@@ -199,13 +236,15 @@ export function computeMoat(world) {
     // Which end is the inside: the one nearer the ward's own middle.
     const gate = old.get(key) ?? { ward: s.ward, dir: s.dir, open: true, gatehouse: 0 };
     gate.tiles = tiles;
+    gate.off = off;
+    gate.wet = wet;
     gate.beyond = s.beyond;
     gate.mid = horizontal ? [mid, s.y0] : [s.x0, mid];
     gates.push(gate);
   }
   world.gates = gates;
   for (let i = 0; i < world.road.length; i++) if (world.road[i] === ROAD.BRIDGE) world.road[i] = ROAD.NONE;
-  for (const g of gates) for (const [x, y] of g.tiles) if (x >= 0 && y >= 0 && x < SIZE && y < SIZE) world.road[idx(x, y)] = ROAD.BRIDGE;
+  for (const g of gates) if (!g.wet) for (const [x, y] of g.tiles) if (x >= 0 && y >= 0 && x < SIZE && y < SIZE) world.road[idx(x, y)] = ROAD.BRIDGE;
   // And the castle's.
   const b = CASTLE_BRIDGE;
   for (let y = b.y; y < b.y + b.d; y++) for (let x = b.x; x < b.x + b.w; x++) world.road[idx(x, y)] = ROAD.BRIDGE;
@@ -287,7 +326,7 @@ export function gradeWard(world, id, passes = 3) {
 
 /** The gate whose bridge covers tile (x, y), if any. */
 export function gateAt(world, x, y) {
-  for (const g of world.gates) for (const [tx, ty] of g.tiles) if (tx === x && ty === y) return g;
+  for (const g of world.gates) if (!g.wet) for (const [tx, ty] of g.tiles) if (tx === x && ty === y) return g;
   return null;
 }
 

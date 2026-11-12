@@ -41,6 +41,16 @@ if (saved) {
 }
 if (!game) game = startGame({ seed: params.get('seed') || randomSeed(), difficulty, disasters });
 
+// Development: `?annexall=1` takes in every ward at once, to see all the gates and the whole map's edge.
+if (dev && params.has('annexall')) {
+  const { completeAnnex } = await import('./sim/game.js');
+  for (let guard = 0; guard < 200; guard++) {
+    const next = game.world.wards.find((w) => !w.owned && game.world.gates.some((gt) => gt.beyond === w.id));
+    if (!next) break;
+    completeAnnex(game, next);
+  }
+}
+
 // Development: play a bot's hand first, to see a town.
 const pre = +(params.get('bot') ?? 0);
 if (pre && dev) {

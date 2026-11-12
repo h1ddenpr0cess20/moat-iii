@@ -92,7 +92,7 @@ function planBridge(game, tiles) {
   const open = tiles.map(([x, y]) => spanWater(world, x, y));
   const wet = tiles.map(([x, y], k) => open[k] || marsh(world, x, y));
   if (!open.some(Boolean)) return { ...out, blocked: tiles.filter(([x, y]) => roadBlocked(world, x, y) && !marsh(world, x, y)), reason: 'A bridge needs water to cross' };
-  if (open[0] || open[open.length - 1]) return { ...out, blocked: tiles.filter((_, k) => open[k]), reason: 'Both ends of a bridge must be on the bank, not in the water' };
+  if (wet[0] || wet[wet.length - 1]) return { ...out, blocked: tiles.filter((_, k) => wet[k]), reason: 'Both ends of a bridge must be on the bank, not in the water' };
   let run = 0;
   for (const w of wet) { run = w ? run + 1 : 0; if (run > MAX_SPAN) return { ...out, blocked: tiles.filter((_, k) => wet[k]), reason: `Too long to span: ${MAX_SPAN} tiles of water at most` }; }
   for (let k = 0; k < tiles.length; k++) {

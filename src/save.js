@@ -88,7 +88,7 @@ export function serialize(game) {
     gameOver: game.gameOver,
     stats: game.stats,
     wards: world.wards.map((w) => [w.id, w.owned ? 1 : 0, w.dig]),
-    gates: world.gates.map((g) => [g.ward, g.dir, g.open ? 1 : 0, g.gatehouse]),
+    gates: world.gates.map((g) => [g.ward, g.dir, g.open ? 1 : 0, g.gatehouse, g.off ?? 0]),
     nextId: world.nextId,
     buildings: [...world.buildings.values()].map((b) => [b.id, b.type, b.x, b.y, b.w, b.d, b.front, b.level, b.variant, b.state, +b.progress.toFixed(3), b.built ?? 0, b.upgrading ? 1 : 0]),
     maps,
@@ -103,6 +103,8 @@ export function deserialize(data) {
   const { world } = game;
   // Wards first: the moat and the realm follow from which are owned.
   for (const [id, owned, dig] of data.wards) { world.wards[id].owned = Boolean(owned); world.wards[id].dig = dig; }
+  // Where each gate was slid to along its border. A save from before that kept its gatehouses at the middle.
+  world.gateOffsets = new Map(data.gates.filter((e) => e[4] !== undefined || e[3]).map((e) => [`${e[0]}:${e[1]}`, e[4] ?? 0]));
   computeMoat(world);
   for (const [ward, dir, open, gatehouse] of data.gates) {
     const g = world.gates.find((x) => x.ward === ward && x.dir === dir);
