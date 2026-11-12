@@ -1,7 +1,7 @@
 import { CASTLE_BRIDGE } from '../world/wards.js';
 import { deckAt, rampOver } from '../world/bridges.js';
-import { idx, inb } from '../world/world.js';
-import { CENTER, ROAD } from '../config.js';
+import { heightAt, idx, inb } from '../world/world.js';
+import { CENTER, GROUND, ROAD, WATER_LEVEL } from '../config.js';
 import { LIFT } from './decals.js';
 import { Batch, Mesher } from 'madness-engine/mesher';
 import { castsShadow } from './materials.js';
@@ -136,8 +136,10 @@ export function createGates(GFX, world, materials, scene) {
       if (it.pivot) it.pivot.rotation.z = it.angle;
       items.push(it);
     }
-    // The founder's own bridges over rivers and lakes: each straight run of span tiles, with a tile of bank at either end.
+    // The founder's own bridges over rivers and lakes: each straight run of span tiles, with a tile of bank at either end where there is one.
     const seen = new Set();
+    // Dry ground a deck can land on: not water, and not so low it is awash. Where there is none, the bridge ends with its span.
+    const bank = (x, y) => x >= 0 && y >= 0 && x < world.size && y < world.size && world.ground[y * world.size + x] !== GROUND.WATER && heightAt(world, x + 0.5, y + 0.5) > WATER_LEVEL + 0.08;
     const span = (x, y) => x >= 0 && y >= 0 && x < world.size && y < world.size && world.road[y * world.size + x] === ROAD.SPAN;
     for (let y = 0; y < world.size; y++) {
       for (let x = 0; x < world.size; x++) {
@@ -148,7 +150,8 @@ export function createGates(GFX, world, materials, scene) {
         while (horizontal ? span(x + n, y) : span(x, y + n)) { run.push((horizontal ? y : y + n) * world.size + (horizontal ? x + n : x)); n++; }
         for (const t of run) seen.add(t);
         const ramp = rampOver(world, run);
-        const it = horizontal ? bridge(x - 1, y + 0.5, 1, 0, n + 2, ramp, { width: 1.05 }) : bridge(x + 0.5, y - 1, 0, 1, n + 2, ramp, { width: 1.05 });
+        const a = (horizontal ? bank(x - 1, y) : bank(x, y - 1)) ? 1 : 0, b = (horizontal ? bank(x + n, y) : bank(x, y + n)) ? 1 : 0;
+        const it = horizontal ? bridge(x - a, y + 0.5, 1, 0, n + a + b, ramp, { width: 1.05 }) : bridge(x + 0.5, y - a, 0, 1, n + a + b, ramp, { width: 1.05 });
         items.push(it);
       }
     }
