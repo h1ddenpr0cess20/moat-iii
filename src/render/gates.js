@@ -122,6 +122,7 @@ export function createGates(GFX, world, materials, scene) {
   const build = () => {
     clear();
     for (const g of world.gates) {
+      if (g.wet) continue; // all water on that border: no bridge to nowhere
       const [mx, my] = g.mid;
       // The inner end and the way outward.
       const out = [[0, -1], [1, 0], [0, 1], [-1, 0]][g.dir];

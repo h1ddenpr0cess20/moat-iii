@@ -59,7 +59,7 @@ export function check(world, type, x, y, front) {
   const [w, d] = footprint(type, front);
   const rect = { x, y, w, d };
   if (def.where?.gate) {
-    const g = world.gates.find((gt) => { const r = gateRect(gt); return x >= r.x - 1 && x <= r.x + 2 && y >= r.y - 1 && y <= r.y + 2; });
+    const g = world.gates.find((gt) => { if (gt.wet) return false; const r = gateRect(gt); return x >= r.x - 1 && x <= r.x + 2 && y >= r.y - 1 && y <= r.y + 2; });
     if (!g) return { ok: false, reason: 'A gatehouse goes on a gate', rect };
     if (g.gatehouse) return { ok: false, reason: 'This gate has one', rect: gateRect(g) };
     return { ok: true, rect: gateRect(g), front: g.dir, gate: g, warn: [] };
