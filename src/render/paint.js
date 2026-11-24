@@ -1,4 +1,4 @@
-import { fractal, grey, pair, pixels, random, smoothstep } from 'madness-engine/textures/painters';
+import { fractal, gray, pair, pixels, random, smoothstep } from 'madness-engine/textures/painters';
 
 /**
  * The textures the engine's painters don't have: the roofs (thatch, clay
@@ -22,7 +22,7 @@ export function thatch(GFX) {
     const lip = smoothstep(0.78, 1, f);
     const base = 0.62 + blot(u, v) * 0.22 + (fine - 0.5) * 0.18;
     const k = relief ? 0.35 + f * 0.5 + fine * 0.18 : base * (1 - lip * 0.35) * (f < 0.05 ? 0.7 : 1);
-    return grey(Math.round(255 * Math.min(1, k)));
+    return gray(Math.round(255 * Math.min(1, k)));
   });
   return pair(GFX, 256, paint(false), paint(true));
 }
@@ -43,7 +43,7 @@ export function roofTile(GFX) {
     const edge = Math.min(fu, 1 - fu) < 0.04;
     const tone = tones[(r * across + (c % across + across) % across) % tones.length];
     const k = relief ? (edge ? 0.15 : 0.4 + round * 0.45 - foot * 0.35 + f * 0.1) : (edge ? 0.3 : tone * (0.82 + n(u, v) * 0.18) * (1 - foot * 0.28 + round * 0.06));
-    return grey(Math.round(255 * Math.min(1, Math.max(0, k))));
+    return gray(Math.round(255 * Math.min(1, Math.max(0, k))));
   });
   return pair(GFX, 256, paint(false), paint(true));
 }
@@ -62,7 +62,7 @@ export function shingle(GFX) {
     const lip = smoothstep(0.7, 1, f);
     const tone = tones[(r * across + ((c % across) + across) % across) % tones.length];
     const k = relief ? (joint ? 0.1 : 0.45 + f * 0.4) : (joint ? 0.28 : tone * (0.84 + n(u, v) * 0.16) * (1 - lip * 0.3));
-    return grey(Math.round(255 * Math.min(1, k)));
+    return gray(Math.round(255 * Math.min(1, k)));
   });
   return pair(GFX, 256, paint(false), paint(true));
 }
@@ -71,12 +71,12 @@ export function shingle(GFX) {
 export function ripples(GFX) {
   const warp = fractal(347, 4, 3);
   const fine = fractal(349, 10, 2);
-  return pair(GFX, 256, () => pixels(256, () => grey(200)), (size) => pixels(size, (u, v) => {
+  return pair(GFX, 256, () => pixels(256, () => gray(200)), (size) => pixels(size, (u, v) => {
     const w = warp(u, v) * 2.2;
     const a = Math.sin((u * 5 + v * 2 + w) * Math.PI * 2);
     const b = Math.sin((u * 3 - v * 6 + w * 1.3) * Math.PI * 2);
     const c = Math.sin((v * 9 + u + w * 0.7) * Math.PI * 2);
     const k = 0.5 + 0.22 * a + 0.18 * b + 0.1 * c + (fine(u, v) - 0.5) * 0.25;
-    return grey(Math.round(255 * Math.min(1, Math.max(0, k))));
+    return gray(Math.round(255 * Math.min(1, Math.max(0, k))));
   }));
 }

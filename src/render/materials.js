@@ -48,7 +48,7 @@ export function createMaterials(GFX) {
     leafC: textured(tex.hedge, { roughness: 0.82, bumpScale: 1.6, color: new GFX.Color('#4f8a34') }),
     needle: textured(tex.hedge, { roughness: 0.88, bumpScale: 1.8, color: new GFX.Color('#285c33') }),
   };
-  // The trim of a wall (the beams of half-timbering, the bars of a window, the frame of a door) is timber, but is a few centimetres across, finer than the shadow map can draw, and can only throw a speckle of shadow on the wall beside it. It is its own part, so that it can take shadows without throwing any.
+  // The trim of a wall (the beams of half-timbering, the bars of a window, the frame of a door) is timber, but is a few centimeters across, finer than the shadow map can draw, and can only throw a speckle of shadow on the wall beside it. It is its own part, so that it can take shadows without throwing any.
   mat.trim = mat.timber;
   // Only the plain-colored materials have no texture coordinates to read.
   return { tex, mat };
